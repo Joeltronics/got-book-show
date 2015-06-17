@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<!--
+	Hey, someone actually looked at the source code!
+	Unfortunately, it's not that exciting, because I used a Python script to generate most of it.
+
+	Also, class names are minified:
+		b1 = book 1
+		b1c = book 1 collapsed
+		lb = left border (etc)
+		s = stripe
+		cn = chapter name
+		cni = chapter name inside
+		cnr = chapter name rotate div
+		ho = hasn't occurred yet in show
+		c = connection
+		wc = weak connection
+		sc = strong connection
+	-->
+
+	<title>Game of Thrones episode chapter coverage</title>
+
+	<link href='http://fonts.googleapis.com/css?family=Lato:400,700' rel='stylesheet' type='text/css'>
+	
+	<link rel="stylesheet" type="text/css" href="css/reset.css" />
+	<link rel="stylesheet" type="text/css" href="css/stylesheet.css" />
+	<link rel="stylesheet" type="text/css" href="css/table.css" />
+	<link rel="stylesheet" type="text/css" href="css/coloring-global.css" />
+	<link rel="stylesheet" type="text/css" href="css/coloring-pov.css" />
+	<link rel="stylesheet" type="text/css" href="css/hidespoilers.css" />
+
+	<script src="js/got.js"></script>
+</head>
+
+<body onload="onload()">
+<div id="title">
+	<center><h1>Game of Thrones episode chapter coverage</h1></center>
+</div>
+
+<div id="smallscreens">
+You appear to be on mobile. Unfortunately, this interactive version will not work very well on mobile. <strong>Try the <a href="bookshow-static.html">static image version</a> instead.</strong>
+</div>
+
+<div id="topcontent">
+<form id="settings">
+	<h2>Settings</h2>
+	<ul>
+		<li>					
+			Show chapter titles: 
+			<select id="spoiler" name="spoilerselect" onchange="setspoilers()">
+				<option value="0" selected>Only what the show has covered</option>
+				<option value="1">All released books</option>
+				<option value="2">Include The Winds of Winter previews</option>
+			</select>
+		</li>
+		<li><input type="checkbox" name="colorcheckbox" value="color" onchange="colorbox()" checked> Color boxes by POV character</li>
+		<li><input type="checkbox" name="combine45checkbox" value="combine" onchange="combine45()"> Combine A Feast for Crows &amp; A Dance with Dragons into chronological order</li>
+		<li><input type="checkbox" name="floatleftcheckbox" value="combine" onchange="floatleft()" checked> Float left columns when scrolling table</li>
+		<li class="noinput">Click on book titles to collapse</li>
+	</ul>
+</form>
+
+<div id="legend1">
+<p>A filled-in box means the the episode draws events directly from the chapter
+(this doesn't necessarily mean it covers the <em>entire</em> chapter)</p>
+<p>A dotted box means the episode draws indirectly from the chapter - revealing events that occur off-page,
+introducing characters, minor details of an event, etc - but does not directly depict events in the chapter.</p>
+<p>Hover over some connections for details</p>
+</div>
+</div> <!-- /topcontent -->
+
+<!--table-->
+
+<div id="legend2">
+<p>Chapter-episode data partially taken from westeros.org's <a href="http://www.westeros.org/GoT/Episodes/">"Book to Screen" analysis</a></p>
+<p>AFFC &amp; ADWD chronological order is from 
+<a href="http://boiledleather.com/post/24543217702/a-proposed-a-feast-for-crows-a-dance-with-dragons">Boiled 
+Leather</a> <strong>(spoiler warning!)</strong>
+<br>
+If you want to read them in combined order, 
+<a href="http://boiledleather.com/post/25902554148/a-new-reader-friendly-combined-reading-order-for-a">this spoiler-safe order</a>
+is much better.</p>
+<p>The Winds of Winter is based on preview chapters released so far, including chapters George R.R. Martin has read at conventions. Their actual order in the book is unknown.</p>
+</div>
+
+<div id="copyright">
+<span class="copyrighttext">Copyright 2013-2015 Joel Geddert</span>
+<p>This work is licensed under a Creative Commons
+Attribution-ShareAlike 4.0 International License<br>
+<a href="http://creativecommons.org/licenses/by-sa/4.0/">http://creativecommons.org/licenses/by-sa/4.0/
+<br><img src="imgs/cc-by-sa.png" /></p>
+</a>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,63 @@
+/* ***** Book titles ***** */
+
+th.b1title {
+	background-color:#1f3fff;
+	color: #fff;
+}
+
+th.b2title {
+	background-color:#ffcb00;
+	color: #000;
+}
+
+th.b3title {
+	background-color:#00bf3f;
+	color: #fff;
+}
+
+.b4title {
+	background-color:#cf1f00;
+	color: #fff;
+}
+
+.b5title {
+	background-color:#aaaaaa;
+	color: #000;
+}
+
+.b45title {
+	background-color:#cf1f00;
+	color: #fff;
+}
+
+.b6title {
+	background-color:#fff;
+	color: #000;
+}
+
+/* ***** Season titles ***** */
+
+.seas1title {
+	background-color:#1f3fff;
+	color: #fff;
+}
+
+.seas2title {
+	background-color:#ffcb00;
+	color: #000;
+}
+
+.seas3title {
+	background-color:#00bf3f;
+	color: #fff;
+}
+
+.seas4title {
+	background-color:#cf1f00;
+	color: #fff;
+}
+
+.seas5title {
+	background-color:#aaaaaa;
+	color: #000;
+}

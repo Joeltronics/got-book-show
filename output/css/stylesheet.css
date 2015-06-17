@@ -1,0 +1,93 @@
+/* See table.css for anything inside tablediv (except for #maintablediv scrolling) */
+
+/* ***** Horizontal Scrolling ***** */
+
+body      { overflow-x: hidden; }
+#maintablediv { overflow-x: auto; }
+
+/* ***** Text ***** */
+
+body { font-family: 'Lato', Helvetica, Arial, "sans-serif"; }
+strong { font-weight: bold; }
+
+h1             { font-size: 24px; font-weight: bold; }
+#settings      { font-size: 12px; }
+#settings h2   { font-size: 12px; font-weight: bold; }
+#legend1       { font-size: 14px; }
+#legend2       { font-size: 14px; }
+#copyright     { font-size: 10px; }
+.copyrighttext { font-size: 14px; }
+
+#settings li         { margin: 0.3em; }
+#settings li.noinput { margin-top: 0.6em; }
+
+p { padding-bottom: 0.75em; }
+
+/* ***** Layout ***** */
+
+#smallscreens {
+	display:none;
+}
+
+@media screen and (max-width: 575px) {
+	#smallscreens {
+		padding: 10px;
+		display:block;
+	}
+}
+
+body {
+	background-color: #bbb;
+	height: 100%;	
+}
+
+#title {
+	position: center;
+	padding: 10px;
+}
+
+#topcontent {
+	display: block;
+	max-width: 600px;
+}
+
+#settings {
+	padding: 10px 0 10px 10px;
+	display: block;
+	width: 100%;
+}
+
+#legend1 {
+	padding: 10px 0 10px 10px;
+	display: block;
+	width: 100%;
+}
+
+#legend2 {
+	padding: 10px;
+	min-width: 400px;
+	max-width: 600px;
+	clear: both; /* Small screens only */
+}
+
+#copyright {
+	padding: 10px;
+	max-width: 250px;
+}
+
+@media screen and (min-width: 900px) {
+	#legend2 {
+		clear: none;
+		float: left;
+	}
+
+	#copyright {
+		float: right;
+	}
+}
+
+#tablediv {
+	padding: 0px 1px;
+	margin: 0px 20px;
+	clear: both;
+}
