@@ -20,6 +20,6 @@ The Winds of Winter is based on preview chapters released so far, including chap
 
 ## License
 
-* All Python and Javascript code are licensed under the [GPL 3.0](http://www.gnu.org/licenses/)
+* All Python and Javascript code is licensed under the [GPL 3.0](http://www.gnu.org/licenses/)
 
 * All HTML, CSS, and image files are licensed under the [Creative Commons BY-SA 4.0 license](http://creativecommons.org/licenses/by-sa/4.0/)
