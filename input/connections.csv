@@ -38,10 +38,10 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 1,4,1,Bran VII,0,0,Elements of Bran's Dream in this episode are taken from a later dream in the book
 ,,,,,,
 1,5,1,Eddard VII,1,0,
-1,5,1,Tyrion III,1,0,
-1,5,1,Arya IV,1,0,
+1,5,1,Tyrion IV,1,0,
+1,5,1,Arya III,1,0,
 1,5,1,Eddard VIII,1,0,
-1,5,1,Catelyn V,1,0,
+1,5,1,Catelyn VI,1,0,
 1,5,1,Eddard IX,1,0,
 ,,,,,,
 1,6,1,Eddard X,1,0,
@@ -49,9 +49,8 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 1,6,1,Bran V,1,0,
 1,6,1,Tyrion IV,1,0,
 1,6,1,Daenerys V,1,0,
-1,6,1,Tyrion IV,1,0,
+1,6,1,Tyrion V,1,0,
 1,6,1,Eddard XI,1,0,
-1,6,1,Catelyn VI,1,0,
 1,6,1,Sansa III,1,0,
 1,6,1,Daenerys V,1,0,
 1,6,1,Bran VII,0,0,Elements of Bran's dream
@@ -106,6 +105,7 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 2,1,2,Catelyn I,1,0,
 2,1,2,Bran III,0,0,Bran with Northern lords
 ,,,,,,
+2,2,2,Davos I,1,0,
 2,2,2,Arya II,1,0,
 2,2,2,Tyrion II,1,0,
 2,2,2,Arya III,1,0,
@@ -155,32 +155,46 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 2,5,2,Theon III,0,0,Theon comes up with the plan to attack Winterfell
 2,5,2,Daenerys III,0,0,Xaro Xoan Daxos asks Daenerys to marry him
 ,,,,,,
+2,6,2,Jon IV,0,0,Jon has trouble keeping control of Ghost
+2,6,2,Tyrion VIII,0,0,Littlefinger plans to negotiate with the Tyrells
+2,6,2,Theon III,0,0,Details of Tyrion killing Ser Rodrik are taken from killing someone else in this chapter
+2,6,2,Catelyn V,0,0,Catelyn returns
+2,6,2,Sansa IV,0,0,Elements of the riot are taken from Sansa's memory in this chapter
 2,6,2,Bran VI,1,0,
 2,6,2,Theon IV,1,0,
 2,6,2,Theon V,1,0,"In the books, Theon executes Farlen, not Ser Rodrik"
-2,6,2,Theon VI,1,0,
+2,6,2,Theon VI,1,0,Ser Rodrik is killed
 2,6,2,Jon VI,1,0,
 2,6,2,Tyrion IX,1,0,
 2,6,2,Daenerys III,0,0,
 2,6,2,Arya VIII,0,0,
 ,,,,,,
+2,7,2,Arya VI,0,0,We learn the history of Harrenhal
 2,7,2,Theon IV,1,0,
+2,7,2,Theon V,1,0,
 2,7,2,Sansa IV,1,0,Conversation between Sansa and the Hound (though location and circumstances are different)
 2,7,2,Catelyn V,0,0,Jaime's escape attempt occurs much differently
 2,7,2,Catelyn VII,1,0,Catelyn and Jaime's conversation
+2,7,2,Jon VI,1,0,
+2,7,2,Jon VIII,1,0,
 2,7,3,Jon II,0,0,Elements of Jon and Ygritte's interaction
 ,,,,,,
+2,8,2,Jon IV,1,0,
+2,8,2,Jon VIII,0,0,Qhorin tells Jon to become a spy
+2,8,2,Arya VIII,1,0,
 2,8,2,Theon V,1,0,
-2,8,3,Catelyn II,1,0,
+2,8,2,Catelyn I,0,0,Catelyn is imprisoned
+2,8,3,Catelyn II,1,0,Catelyn and Robb discuss her freeing Jaime
 2,8,3,Jaime I,1,0,
 2,8,2,Arya IX,1,0,
+2,8,2,Tyrion XI,0,0,Tyrion prepares the defence of King's Landing
 2,8,2,Tyrion XII,1,0,
 2,8,2,Arya X,0,0,
 2,8,3,Jon I,0,0,
 2,8,3,Davos IV,0,0,Davos is named Stannis' Hand
 2,8,2,Bran VII,0,0,Luwin figures out the boys are not Bran & Rickon
 ,,,,,,
-2,9,2,Tyrion X,0,0,Details of Tyrion and Varys' covnersation
+2,9,2,Tyrion X,0,0,Details of Tyrion and Varys' conversation
 2,9,2,Sansa V,1,1,The Battle of Blackwater Bay
 2,9,2,Davos III,1,1,The Battle of Blackwater Bay
 2,9,2,Sansa VI,1,1,The Battle of Blackwater Bay
@@ -197,10 +211,12 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 2,10,2,Arya IX,1,0,
 2,10,2,Bran VII,1,0,
 2,10,2,Daenerys IV,1,1,House of the Undying (though many of the details were changed)
+2,10,2,Daenerys V,0,0,Daenerys leaves Qarth
 2,10,2,Jon VIII,1,0,"Jon kills Qhorin (though in the books, it is Ghost that kills him)"
 2,10,3,Jon I,1,0,
 2,10,3,Prologue,1,0,
 2,10,3,Davos IV,0,0,Stannis and Melisandre scene is based on details learned later in ASOS
+2,10,3,Catelyn II,1,0,
 ,,,,,,
 3,1,2,Daenerys V,1,0,"Ser Barristan is introduced to Daenerys (originally in Qarth, though he is disguised) and saves her from an assassination attempt"
 3,1,3,Samwell I,1,0,Escape from the Fist
