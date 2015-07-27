@@ -311,6 +311,7 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 3,10,3,Davos VI,1,0,
 3,10,3,Jon VI,1,0,
 3,10,3,Daenerys IV,1,0,
+3,10,3,Jaime VII,1,0,Jaime returns to Kings Landing (though at a different time)
 ,,,,,,
 4,1,3,Jaime VII,1,0,
 4,1,3,Tyrion IV,0,0,Admiring the new swords
@@ -334,6 +335,7 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 4,3,3,Tyrion IX,1,0,
 4,3,3,Daenerys V,1,0,Daario fights the Champion of Meereen instead of Strong Belwas
 4,3,3,Arya XII,0,0,Arya and The Hound with the villager
+4,3,3,Davos VI,0,0,Stannis learns of Joffrey's death
 ,,,,,,
 4,4,3,Daenerys VI,1,1,Daenerys takes Meereen (though much differently in the books)
 4,4,3,Sansa V,1,0,
@@ -466,6 +468,7 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 5,8,4,Cat of the Canals,1,0,Arya goes out as a girl selling oysters to learn information
 5,8,5,The Ugly Little Girl,1,0,Arya is given her mission to kill the merchant
 5,8,5,Jon XII,0,0,"In the books, here Jon receives a letter informing him of some of the details at Hardhome (Jon himself does not go)"
+5,8,5,Melisandre,0,0,We learn the Lord of Bones died (though much differently)
 ,,,,,,
 5,9,5,The Sacrifice,0,0,Elements of Stannis' story are taken from this chapter
 5,9,5,The Watcher,1,0,"The events in Dorne loosely follow this chapter, although the details are changed"
