@@ -47,7 +47,6 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 1,6,1,Eddard X,1,0,
 1,6,1,Daenerys VI,0,0,Dany and the dragon's egg in the brazier
 1,6,1,Bran V,1,0,
-1,6,1,Tyrion IV,1,0,
 1,6,1,Daenerys V,1,0,
 1,6,1,Tyrion V,1,0,
 1,6,1,Eddard XI,1,0,
@@ -183,7 +182,7 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 2,8,2,Jon VIII,0,0,Qhorin tells Jon to become a spy
 2,8,2,Arya VIII,1,0,
 2,8,2,Theon V,1,0,
-2,8,2,Catelyn I,0,0,Catelyn is imprisoned
+2,8,3,Catelyn I,0,0,Catelyn is imprisoned
 2,8,3,Catelyn II,1,0,Catelyn and Robb discuss her freeing Jaime
 2,8,3,Jaime I,1,0,
 2,8,2,Arya IX,1,0,
