@@ -239,34 +239,34 @@ A Feast for Crows,7,Cersei II,Cersei,KL,KL,,1
 A Feast for Crows,8,Jaime I,Jaime,KL,KL,,1
 A Feast for Crows,9,Brienne II,Brienne,Riverlands,Brienne,,1
 A Feast for Crows,10,Sansa I,Sansa,Vale,Sansa,,1
-A Feast for Crows,11,The Kraken's Daughter,Asha,Iron,Greyjoy,,0
+A Feast for Crows,11,The Kraken's Daughter,Asha,Iron,Greyjoy,,1
 A Feast for Crows,12,Cersei III,Cersei,KL,KL,,1
 A Feast for Crows,13,The Soiled Knight,Arys,Dorne,Dorne,,1
 A Feast for Crows,14,Brienne III,Brienne,Riverlands,Brienne,,1
 A Feast for Crows,15,Samwell II,Samwell,North,Sam,,1
 A Feast for Crows,16,Jaime II,Jaime,KL,KL,,1
 A Feast for Crows,17,Cersei IV,Cersei,KL,KL,,1
-A Feast for Crows,18,The Iron Captain,Victarion,Iron,Greyjoy,,0
-A Feast for Crows,19,The Drowned Man,Aeron,Iron,Greyjoy,,0
-A Feast for Crows,20,Brienne IV,Brienne,Riverlands,Brienne,,0
+A Feast for Crows,18,The Iron Captain,Victarion,Iron,Greyjoy,,1
+A Feast for Crows,19,The Drowned Man,Aeron,Iron,Greyjoy,,1
+A Feast for Crows,20,Brienne IV,Brienne,Riverlands,Brienne,,1
 A Feast for Crows,21,The Queenmaker,Arianne,Dorne,Dorne,,1
 A Feast for Crows,22,Arya II,Arya,Braavos,Arya,,1
 A Feast for Crows,23,Alayne I,Sansa,Vale,Sansa,,1
 A Feast for Crows,24,Cersei V,Cersei,KL,KL,,1
-A Feast for Crows,25,Brienne V,Brienne,Riverlands,Brienne,,0
+A Feast for Crows,25,Brienne V,Brienne,Riverlands,Brienne,,1
 A Feast for Crows,26,Samwell III,Samwell,Braavos,Sam,,1
 A Feast for Crows,27,Jaime III,Jaime,Riverlands,Jaime,,1
 A Feast for Crows,28,Cersei VI,Cersei,KL,KL,,1
 A Feast for Crows,29,The Reaver,Victarion,Iron,Greyjoy,,0
 A Feast for Crows,30,Jaime IV,Jaime,Riverlands,Jaime,,1
-A Feast for Crows,31,Brienne VI,Brienne,Riverlands,Brienne,,0
+A Feast for Crows,31,Brienne VI,Brienne,Riverlands,Brienne,,1
 A Feast for Crows,32,Cersei VII,Cersei,KL,KL,,0
-A Feast for Crows,33,Jaime V,Jaime,Riverlands,Jaime,,0
+A Feast for Crows,33,Jaime V,Jaime,Riverlands,Jaime,,1
 A Feast for Crows,34,Cat of the Canals,Arya,Braavos,Arya,,1
 A Feast for Crows,35,Samwell IV,Samwell,Dorne,Sam,,1
 A Feast for Crows,36,Cersei VIII,Cersei,KL,KL,,1
 A Feast for Crows,37,Brienne VII,Brienne,Riverlands,Brienne,,0
-A Feast for Crows,38,Jaime VI,Jaime,Riverlands,Jaime,,0
+A Feast for Crows,38,Jaime VI,Jaime,Riverlands,Jaime,,1
 A Feast for Crows,39,Cersei IX,Cersei,KL,KL,,0
 A Feast for Crows,40,The Princess in the Tower,Arianne,Dorne,Dorne,,0
 A Feast for Crows,41,Alayne II,Sansa,Vale,Sansa,,1
@@ -309,7 +309,7 @@ A Dance with Dragons,30,Daenerys V,,Essos,Daenerys,,1
 A Dance with Dragons,31,Melisandre,,,,,1
 A Dance with Dragons,32,Reek III,Theon,,,,1
 A Dance with Dragons,33,Tyrion VIII,,,,,1
-A Dance with Dragons,34,Bran III,,,,,0
+A Dance with Dragons,34,Bran III,,,,,1
 A Dance with Dragons,35,Jon VII,,,,,1
 A Dance with Dragons,36,Daenerys VI,,Essos,Daenerys,,1
 A Dance with Dragons,37,The Prince of Winterfell,Theon,,,,1
