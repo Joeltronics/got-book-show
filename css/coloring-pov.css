@@ -12,7 +12,7 @@
 /* Night's Watch */
 
 .cpov .povjon {			background: #333; } /* Dark grey */
-.cpov .povsamwell {		background: #c39782 ; } /* Tan */
+.cpov .povsamwell {		background: #c39782 ; } /* "Fat pink mast" */
 
 /* Lannister */
 
@@ -34,9 +34,9 @@
 /* Greyjoy */
 
 .cpov .povtheon {		background: #bb5294; } /* Bolton Pink */
-.cpov .povvictarion {	background: #666; } /* "Minor character grey" */
-.cpov .povaeron {		background: #666; } /* "Minor character grey" */
-.cpov .povasha {		background: #666; } /* "Minor character grey" */
+.cpov .povvictarion {	background: #005050; } /* Seawater */
+.cpov .povaeron {		background: #005050; } /* Seawater */
+.cpov .povasha {		background: #005050; } /* Seawater */
 
 /* Martell */
 
