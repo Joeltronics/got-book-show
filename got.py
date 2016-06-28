@@ -1,6 +1,6 @@
 """
 Game of Thrones chapters vs episodes chart generator
-Copyright (c) 2013-2015, Joel Geddert
+Copyright (c) 2013-2016, Joel Geddert
 
 This script generates an HTML file of the table.
 
@@ -26,10 +26,11 @@ A note from the author:
 	CC license.
 """
 
-_copyrightInfo = "(c) 2013-2015 Joel Geddert"
+_copyrightInfo = "(c) 2013-2016 Joel Geddert"
 
 ##### Imports #####
 
+import re
 import csv
 import string
 from os.path import join
@@ -820,7 +821,9 @@ def printBodyCells(seasEpNum, totEpNum):
 			else:
 				classes += " sc"
 
-			op("<div class=\"" + classes + "\" title=\"" + conn['notes'] + "\"></div>")
+			title = re.sub('"', '&quot;', conn['notes'])
+			
+			op("<div class=\"" + classes + "\" title=\"" + title + "\"></div>")
 		
 		op("</td>")
 		n += 1
