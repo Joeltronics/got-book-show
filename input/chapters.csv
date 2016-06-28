@@ -226,9 +226,9 @@ A Storm of Swords,77,Tyrion XI,Tyrion,KL,KL,Tyrion,1
 A Storm of Swords,78,Samwell V,Samwell,Wall,night,Stannis,1
 A Storm of Swords,79,Jon XII,Jon,Wall,night,Stannis,1
 A Storm of Swords,80,Sansa VII,Sansa,Vale,Sansa,,1
-A Storm of Swords,81,Epilogue,Other,Riverlands,Other,,0
+A Storm of Swords,81,Epilogue,Other,Riverlands,Other,,1
 ,,,,,,,
-A Feast for Crows,0,Prologue,Other,South,Other,,0
+A Feast for Crows,0,Prologue,Other,South,Other,,1
 A Feast for Crows,1,The Prophet,Aeron,Iron,Greyjoy,,1
 A Feast for Crows,2,The Captain of Guards,Areo,Dorne,Dorne,,1
 A Feast for Crows,3,Cersei I,Cersei,KL,KL,,1
@@ -257,23 +257,23 @@ A Feast for Crows,25,Brienne V,Brienne,Riverlands,Brienne,,1
 A Feast for Crows,26,Samwell III,Samwell,Braavos,Sam,,1
 A Feast for Crows,27,Jaime III,Jaime,Riverlands,Jaime,,1
 A Feast for Crows,28,Cersei VI,Cersei,KL,KL,,1
-A Feast for Crows,29,The Reaver,Victarion,Iron,Greyjoy,,0
+A Feast for Crows,29,The Reaver,Victarion,Iron,Greyjoy,,1
 A Feast for Crows,30,Jaime IV,Jaime,Riverlands,Jaime,,1
 A Feast for Crows,31,Brienne VI,Brienne,Riverlands,Brienne,,1
-A Feast for Crows,32,Cersei VII,Cersei,KL,KL,,0
+A Feast for Crows,32,Cersei VII,Cersei,KL,KL,,1
 A Feast for Crows,33,Jaime V,Jaime,Riverlands,Jaime,,1
 A Feast for Crows,34,Cat of the Canals,Arya,Braavos,Arya,,1
 A Feast for Crows,35,Samwell IV,Samwell,Dorne,Sam,,1
 A Feast for Crows,36,Cersei VIII,Cersei,KL,KL,,1
-A Feast for Crows,37,Brienne VII,Brienne,Riverlands,Brienne,,0
+A Feast for Crows,37,Brienne VII,Brienne,Riverlands,Brienne,,1
 A Feast for Crows,38,Jaime VI,Jaime,Riverlands,Jaime,,1
-A Feast for Crows,39,Cersei IX,Cersei,KL,KL,,0
-A Feast for Crows,40,The Princess in the Tower,Arianne,Dorne,Dorne,,0
+A Feast for Crows,39,Cersei IX,Cersei,KL,KL,,1
+A Feast for Crows,40,The Princess in the Tower,Arianne,Dorne,Dorne,,1
 A Feast for Crows,41,Alayne II,Sansa,Vale,Sansa,,1
-A Feast for Crows,42,Brienne VIII,Brienne,Riverlands,Brienne,,0
+A Feast for Crows,42,Brienne VIII,Brienne,Riverlands,Brienne,,1
 A Feast for Crows,43,Cersei X,Cersei,KL,KL,,1
 A Feast for Crows,44,Jaime VII,Jaime,Riverlands,Jaime,,1
-A Feast for Crows,45,Samwell V,Samwell,South,Sam,,0
+A Feast for Crows,45,Samwell V,Samwell,South,Sam,,1
 ,,,,,,,
 A Dance with Dragons,0,Prologue,Other,Beyond,night,,1
 A Dance with Dragons,1,Tyrion I,Tyrion,Essos,Tyrion,,1
@@ -281,7 +281,7 @@ A Dance with Dragons,2,Daenerys I,Daenerys,Essos,Daenerys,,1
 A Dance with Dragons,3,Jon I,Jon,Wall,night,Stannis,1
 A Dance with Dragons,4,Bran I,Bran,Beyond,Bran,,1
 A Dance with Dragons,5,Tyrion II,Tyrion,Essos,Tyrion,,1
-A Dance with Dragons,6,The Merchant's Man,Quentyn,Essos,,,0
+A Dance with Dragons,6,The Merchant's Man,Quentyn,Essos,,,1
 A Dance with Dragons,7,Jon II,Jon,,,,1
 A Dance with Dragons,8,Tyrion III,Tyrion,,,,1
 A Dance with Dragons,9,Davos I,Davos,North,,,1
@@ -299,9 +299,9 @@ A Dance with Dragons,20,Reek II,Theon,North,Bolton,,1
 A Dance with Dragons,21,Jon V,,,,,1
 A Dance with Dragons,22,Tyrion VI,,,,,1
 A Dance with Dragons,23,Daenerys IV,,,,,1
-A Dance with Dragons,24,The Lost Lord,JonCon,,,,0
-A Dance with Dragons,25,The Windblower,Quentyn,,,,0
-A Dance with Dragons,26,The Wayward Bride,Asha,,,,0
+A Dance with Dragons,24,The Lost Lord,JonCon,,,,1
+A Dance with Dragons,25,The Windblower,Quentyn,,,,1
+A Dance with Dragons,26,The Wayward Bride,Asha,,,,1
 A Dance with Dragons,27,Tyrion VII,,,,,1
 A Dance with Dragons,28,Jon VI,,,,,1
 A Dance with Dragons,29,Davos IV,,,,,1
@@ -323,7 +323,7 @@ A Dance with Dragons,44,Jon IX,,North,night,stannis,1
 A Dance with Dragons,45,The Blind Girl,Arya,,,,1
 A Dance with Dragons,46,A Ghost in Winterfell,Theon,,,,1
 A Dance with Dragons,47,Tyrion X,,,,,1
-A Dance with Dragons,48,Jaime I,,,,,0
+A Dance with Dragons,48,Jaime I,,,,,1
 A Dance with Dragons,49,Jon X,,,,,1
 A Dance with Dragons,50,Daenerys VIII,,,,,1
 A Dance with Dragons,51,Theon I,Theon,,,,1
@@ -331,25 +331,25 @@ A Dance with Dragons,52,Daenerys IX,,,Daenerys,,1
 A Dance with Dragons,53,Jon XI,,,,,1
 A Dance with Dragons,54,Cersei I,,,,,1
 A Dance with Dragons,55,The Queensguard,Barristan,,,,1
-A Dance with Dragons,56,The Iron Suitor,Victarion,,,,0
+A Dance with Dragons,56,The Iron Suitor,Victarion,,,,1
 A Dance with Dragons,57,Tyrion XI,,,,,1
 A Dance with Dragons,58,Jon XII,,,,,1
-A Dance with Dragons,59,The Discarded Knight,Barristan,,,,0
-A Dance with Dragons,60,The Spurned Suitor,Quentyn,,,,0
-A Dance with Dragons,61,The Griffin Reborn,JonCon,,,,0
+A Dance with Dragons,59,The Discarded Knight,Barristan,,,,1
+A Dance with Dragons,60,The Spurned Suitor,Quentyn,,,,1
+A Dance with Dragons,61,The Griffin Reborn,JonCon,,,,1
 A Dance with Dragons,62,The Sacrifice,Asha,,,,1
-A Dance with Dragons,63,Victarion I,,,,,0
+A Dance with Dragons,63,Victarion I,,,,,1
 A Dance with Dragons,64,The Ugly Little Girl,Arya,,,,1
 A Dance with Dragons,65,Cersei II,,,,,1
 A Dance with Dragons,66,Tyrion XII,,,,,1
-A Dance with Dragons,67,The Kingbreaker,Barristan,,,,0
+A Dance with Dragons,67,The Kingbreaker,Barristan,,,,1
 A Dance with Dragons,68,The Dragontamer,Quentyn,,,,1
 A Dance with Dragons,69,Jon XIII,,,,,1
-A Dance with Dragons,70,The Queen's Hand,Barristan,,,,0
+A Dance with Dragons,70,The Queen's Hand,Barristan,,,,1
 A Dance with Dragons,71,Daenerys X,Daenerys,,,,1
 A Dance with Dragons,72,Epilogue,Kevan,,,,1
 ,,,,,,,
-The Winds of Winter,0,Barristan I,,,,,0
+The Winds of Winter,0,Barristan I,,,,,1
 The Winds of Winter,1,Tyrion I,,,,,0
 The Winds of Winter,2,Alayne I,Sansa,,,,1
 The Winds of Winter,3,Arianne I,,,,,0
