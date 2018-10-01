@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Game of Thrones chapters vs episodes chart generator
 Copyright (c) 2013-2018, Joel Geddert
