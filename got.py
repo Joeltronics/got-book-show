@@ -1,6 +1,6 @@
 """
 Game of Thrones chapters vs episodes chart generator
-Copyright (c) 2013-2016, Joel Geddert
+Copyright (c) 2013-2018, Joel Geddert
 
 This script generates an HTML file of the table.
 
@@ -26,7 +26,7 @@ A note from the author:
 	CC license.
 """
 
-_copyrightInfo = "(c) 2013-2016 Joel Geddert"
+_copyrightInfo = "(c) 2013-2018 Joel Geddert"
 
 ##### Imports #####
 
