@@ -1,0 +1,6 @@
+*.pyc
+output*/*.html*
+.idea/*
+Thumbs.db
+.DS_Store
+.Trashes
