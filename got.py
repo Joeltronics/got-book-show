@@ -28,19 +28,20 @@ A note from the author:
 	CC license.
 """
 
-_copyrightInfo = "(c) 2013-2018 Joel Geddert"
-
 ##### Imports #####
 
 import re
 import csv
-import string
 from os.path import join
 import gzip
+import argparse
+
+from utils import *
 
 ##### Hard-coded variables and other runtime parameters #####
 
-_debug = False
+_copyrightInfo = "(c) 2013-2018 Joel Geddert"
+
 _useImgHeaders = True
 
 _hideShowSpoilersFromChapNames = False # Doesn't fully work!
@@ -82,22 +83,21 @@ _eol="\r\n"
 _topLeftBox = '<img src=\"imgs/cornerbox.png\">'
 #_topLeftBox = '&nbsp;'
 
+
 ##### Functions #####
 
-# No numpy necessary!
-def cumsum(x):
-	return [sum(x[:i+1]) for i in range(len(x))]
 
 # macro to output a line
 def opl(line):
 	# global vars g_opInterVer and g_opPrintVer are switches to turning printing to interactive version and print version on or off
 	global g_opPrintVer, g_opInterVer
 	global g_outFileInter, g_outFilePrint, _eol
-	
+
 	if g_opInterVer:
 		g_outFileInter.write(line + _eol)
 	if g_opPrintVer:
 		g_outFilePrint.write(line + _eol)
+
 
 # output, without eol
 def op(line):
@@ -108,95 +108,6 @@ def op(line):
 	if g_opPrintVer:
 		g_outFilePrint.write(line)
 
-# Not the best way of doing this, but it's only used for season numbers so it probably only ever needs to support 1-10
-def toRomanNumeral(num):
-	romnums = ['I','II','III','IV','V','VI','VII','VIII','IX','X']
-	if (num < 1) or (num > len(romnums)):
-		# Fallback in case the show is more than 10 seasons and I forget to update the code yet
-		print("WARNING: roman numeral out of bounds")
-		return num
-	else:
-		return romnums[num-1]
-
-# Approximation for string length
-# This isn't going to be perfect because that requires not only rendering the text, but doing it
-# in exactly the font (and kerning) the browser will use
-# These method should be close enough
-def stringLen(s):
-	n = 0
-	# Iterate 1 character at a time
-	for c in s:
-		if c in '.\'':
-			n += 0.33
-		elif c in ' iIl':
-			n += 0.5
-		elif c in 'ACDGmw':
-			n += 1.25
-		elif c in 'MOQW':
-			n += 1.5
-		elif c in string.ascii_lowercase + string.ascii_uppercase + string.digits + '?':
-			n += 1
-		else:
-			print('WARNING: unknown char ' + c + ' in string ' + s)
-			n += 1
-
-	return n
-
-# Prefix is something we want to prepend to string, that will always be prepended in full
-# and won't count toward checking if string is just 'the' or blank
-# (i.e. prepending book abbreviation or number to chapter name)
-def abbrevString(s, nChar, prefix=''):
-	
-	bAddPrefix = (prefix != '')
-	
-	if bAddPrefix:
-		prefix = prefix + ' '
-		# Make room in character limit for prefix
-		nChar -= stringLen(prefix)
-
-	# Check if we even need to abbreviate at all
-	if stringLen(s) <= nChar:
-		if bAddPrefix:
-			return prefix + s
-		else:
-			return s
-
-	# Once we reach this point, we know we need to abbreviate.
-	# Make room in character limit for however many characters ellipsis will take
-	nChar -= stringLen('...')
-
-	# Try taking as many whole words as we can fit
-	ss = s.split()
-	nwords = len(ss)
-	outstr = ''
-	for n in range(nwords):
-		if stringLen(' '.join(ss[0:n])) < nChar:
-			outstr = ' '.join(ss[0:n])
-		else:
-			break
-
-	# Now check if this ended up abbreviating to blank or just 'the'
-	# If so, instead take as many characters as possible
-	if (outstr == '') or (outstr.lower() == 'the'):
-		outstr = ''
-		for c in s:
-			if stringLen(outstr + c) >= nChar:
-				break
-			outstr += c
-	
-	# If it ended on an apostrophe, remove it
-	if outstr[-1:] == '\'':
-		outstr = outstr[:-1]
-
-	if bAddPrefix:
-		outstr = prefix + outstr
-
-	outstr += '...'
-
-	if _debug:
-		print("Abbreviating chapter '" + prefix + s + "' as '" + outstr + "'")
-
-	return outstr
 
 def findChapter(chapName,bookNum):
 	global g_chapterList
@@ -343,8 +254,7 @@ def parseChapters():
 							'occurred':occurred}
 							
 				chapterList.append(chapter)
-	if _debug:
-		print(repr(chapterList[0:10]))
+	debug_print(repr(chapterList[0:10]))
 
 	return chapterList, bookList, bookNChap
 
@@ -378,10 +288,8 @@ def parseCombinedOrder():
 			chapter = g_chapterList[chapNum + g_bookChapOffset[bookNum-1]]
 			combinedChapterList.append(chapter)
 
-			if _debug:
-				print(chapter)
-				print(repr(combinedchapter))
-				print(line)
+			debug_print(chapter)
+			debug_print(line)
 
 			line = txtFile.readline()
 	return combinedChapterList
@@ -396,8 +304,7 @@ def parseEpisodes():
 			if season != "":
 				epname = row[3]
 				epname = epname[1:-1]
-				if _debug:
-					print(epname)
+				debug_print(epname)
 				episode = {'season': season, 'name': epname}
 				episodeList.append(episode)
 	return episodeList
@@ -437,8 +344,7 @@ def parseConnections():
 				# This line causes it to crash when the chapter is incorrectly named (which is okay!)
 				chapNum = int(chapter['number']) + 1 + sum(g_bookNChap[0:bookNum-1])
 				
-				if _debug:
-					print("chapName:", chapName, "chapNum:", chapNum)
+				debug_print("chapName:", chapName, "chapNum:", chapNum)
 
 				connection = {	'epNum':epNum,
 								'bookNum':bookNum,
@@ -450,8 +356,7 @@ def parseConnections():
 								
 				connList.append(connection)
 
-	if _debug:
-		print(repr(connList[0:10]))
+	debug_print(repr(connList[0:10]))
 
 	return connList
 
@@ -583,15 +488,13 @@ def printChapterTitleCells():
 					n = 0
 				combinedsection = 1
 
-				if _debug:
-					print("bookNum=", bookNum, " chapNum=", chapNum, sep="")
+				debug_print("bookNum=", bookNum, " chapNum=", chapNum, sep="")
 
 		elif bookNum == 6:
 			combinedsection = 0
 
 		if (bookNum != prevchapbooknum and not combinedsection):
-			if _debug:
-				print("bookNum=", bookNum, " prevchapbooknum=", prevchapbooknum, " combinedsection=", combinedsection, sep="")
+			debug_print("bookNum=", bookNum, " prevchapbooknum=", prevchapbooknum, " combinedsection=", combinedsection, sep="")
 			n = 0
 			
 		chapName = chap['name']
@@ -643,8 +546,7 @@ def printChapterTitleCells():
 				# Get episode number that corresponds to this chapter (used for hiding show spoilers)
 				chapSeason = getSeasonNumForChapter(chap)
 
-				if _debug:
-					print('Chapter', chap['totChapNum'], 'chapSeason', chapSeason)
+				debug_print('Chapter', chap['totChapNum'], 'chapSeason', chapSeason)
 
 				if chapSeason == 0:
 					classes2 += " ho"
@@ -667,10 +569,8 @@ def printBodyCells(seasEpNum, totEpNum):
 
 	connums = [item['totChapNum'] for item in conns]
 
-	if _debug:
-		print("episode ", totEpNum, ", ", len(conns), " connections: ", repr(connums), sep="")
-		if _debug:
-			print(repr(conns), _eol)
+	debug_print("episode ", totEpNum, ", ", len(conns), " connections: ", repr(connums), sep="")
+	debug_print(repr(conns), _eol)
 
 	prevbooknum = -1
 	prevchapnum = -1
@@ -702,18 +602,17 @@ def printBodyCells(seasEpNum, totEpNum):
 		if ((bookNum != prevbooknum) and not combined45section):				
 			isnewbook = 1
 
-		if _debug and debugprintthisline:
-			if newbook:
+		if debugprintthisline:
+			if isnewbook:
 				if not combined45section:
-					print('')
-					print('Book', bookNum, 'start')
+					debug_print('')
+					debug_print('Book', bookNum, 'start')
 				else:
-					print('')
-					print('Book 4+5 combined start')
+					debug_print('')
+					debug_print('Book 4+5 combined start')
 
 		prevbooknum = bookNum
 		prevchapnum = chapNum
-
 
 		if isnewbook:
 			n = 0
@@ -762,8 +661,8 @@ def printBodyCells(seasEpNum, totEpNum):
 
 		# Print cell
 
-		if _debug and debugprintthisline:
-			print("Book", bookNum, "Chapter", chapNum)
+		if debugprintthisline:
+			debug_print("Book", bookNum, "Chapter", chapNum)
 
 		if not combined45section:
 			classes = "b" + str(bookNum)
@@ -789,11 +688,11 @@ def printBodyCells(seasEpNum, totEpNum):
 		if (n % _nStripe == 0) or ((seasEpNum-1) % _nStripe == 0):
 			classes += " s"
 
-		if _debug and debugprintthisline:
+		if debugprintthisline:
 			if 'lb' in classes:
-				print('left border')
+				debug_print('left border')
 			if 'rb' in classes:
-				print('right border')
+				debug_print('right border')
 
 		op("<td class=\"" + classes + "\">")
 
@@ -953,9 +852,8 @@ def doParsing():
 	# Insert combined chapter list into g_chapterList
 	g_interleavedChapterList[g_bookChapOffset[5]:g_bookChapOffset[5]] = combinedChapterList
 
-	if _debug:
-		for chapter in g_interleavedChapterList:
-			print(repr(chapter))
+	for chapter in g_interleavedChapterList:
+		debug_print(repr(chapter))
 
 	print("")
 
@@ -1111,7 +1009,12 @@ def processOutputFiles():
 
 ##### Processing starts here #####
 
-if __name__ == "__main__":
+def main():
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-d', '--debug', action='store_true')
+	args = parser.parse_args()
+
+	set_debug(args.debug)
 
 	print("")
 	print("Game of Thrones episode-chapter table generator")
@@ -1132,3 +1035,6 @@ if __name__ == "__main__":
 	print("Complete!")
 	print("")
 
+
+if __name__ == "__main__":
+	main()
