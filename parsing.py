@@ -46,7 +46,7 @@ _tab = "\t"
 def parse_chapters():
 	print("Processing", _chapterFilename)
 	chapter_list = []
-	book_list = []
+	book_names = []
 	book_num_chap = []
 	total_chap_num = 0
 	with open(_chapterFilename) as csvFile:
@@ -75,8 +75,8 @@ def parse_chapters():
 				if (row[6] != ""):
 					storyline.append(row[6].lower())
 				occurred = row[7]
-				if bookname not in book_list:
-					book_list.append(bookname)
+				if bookname not in book_names:
+					book_names.append(bookname)
 					book_num += 1
 					book_num_chap.append(1)
 				else:
@@ -98,10 +98,16 @@ def parse_chapters():
 
 	debug_print(repr(chapter_list[0:10]))
 
-	return chapter_list, book_list, book_num_chap
+	book_chap_offset = cumsum(book_num_chap)
+	#prepend 0 to start
+	book_chap_offset[:0] = [0]
+
+	book_list = [Book(name, num_chapters, chap_offset) for name, num_chapters, chap_offset in zip(book_names, book_num_chap, book_chap_offset)]
+
+	return chapter_list, book_list
 
 
-def parse_combined_order(chapter_list, book_chap_offset):
+def parse_combined_order(chapters, books):
 	print("Processing", _combinedFilename)
 	combined_chapter_list = []
 	with open(_combinedFilename, 'rU') as txtFile:
@@ -128,7 +134,7 @@ def parse_combined_order(chapter_list, book_chap_offset):
 			# combined.txt 1-indexes chapters
 			chapNum = int(words[n + 1]) - 1
 
-			chapter = chapter_list[chapNum + book_chap_offset[book_num - 1]]
+			chapter = chapters[chapNum + books[book_num - 1].first_chapter_offset]
 			combined_chapter_list.append(chapter)
 
 			debug_print(chapter)
@@ -185,10 +191,9 @@ def parse_connections(db):
 					print(_tab, "book ", book_num, " chap_name ", chap_name, sep="")
 					print(_tab, "notes: ", notes, sep="")
 
-				# This line causes it to crash when the chapter is incorrectly named (which is okay!)
-				chap_num = int(chapter.number) + 1 + sum(db.chapters_per_book[0:book_num - 1])
+				chap_num = int(chapter.number) + 1 + db.books[book_num-1].first_chapter_offset
 
-				debug_print("chap_name:", chap_name, "chap_num:", chap_num)
+				debug_print("chap_name: %s, chap_num: %i", (chap_name, chap_num))
 
 				connList.append(Connection(
 					ep_num=ep_num,
@@ -209,27 +214,22 @@ def do_parsing() -> DB:
 
 	db = DB()
 
-	db.chapters, db.books, db.chapters_per_book = parse_chapters()
-
-	db.book_chap_offset = cumsum(db.chapters_per_book)
-
-	#prepend 0 to start
-	db.book_chap_offset[:0] = [0]
+	db.chapters, db.books = parse_chapters()
 
 	print("")
-	print(len(db.chapters), "chapters in", len(db.books), "books:")
-	for n in range(len(db.books)):
-		print(n+1, db.books[n], '-', db.chapters_per_book[n], 'chapters, first chapter is', db.book_chap_offset[n]+1, 'overall')
+	print("%i chapters in %i" % (len(db.chapters), len(db.books)))
+	for n, book in enumerate(db.books):
+		print("%i: %s" % (n+1, repr(book)))
 	print("")
 
-	combined_chapter_list = parse_combined_order(db.chapters, db.book_chap_offset)
+	combined_chapter_list = parse_combined_order(db.chapters, db.books)
 
 	print(len(combined_chapter_list), "chapters in books 4+5")
 
 	# Have to use list(), otherwise it just copies reference and that's bad
 	db.chapters_interleaved = list(db.chapters)
 	# Insert combined chapter list into g_chapter_list
-	db.chapters_interleaved[db.book_chap_offset[5]:db.book_chap_offset[5]] = combined_chapter_list
+	db.chapters_interleaved[db.books[5].first_chapter_offset:db.books[5].first_chapter_offset] = combined_chapter_list
 
 	for chapter in db.chapters_interleaved:
 		debug_print(repr(chapter))

@@ -32,6 +32,23 @@ A note from the author:
 from typing import List
 
 
+class Book:
+	def __init__(self, name: str, num_chapters: int, first_chapter_offset: int):
+		self.name = name
+		self.num_chapters = num_chapters
+		self.first_chapter_offset = first_chapter_offset
+
+	def __str__(self):
+		return self.name
+
+	def __repr__(self):
+		return 'Book(%s, %i chapters, first chapter %i overall)' % (
+			self.name,
+			self.num_chapters,
+			self.first_chapter_offset
+		)
+
+
 class Chapter:
 	def __init__(self, book: str, book_num: int, number: int, tot_chap_num: int, name: str, pov_char: str, storyline: List[str], location: str, occurred: str):
 		self.book = book
@@ -87,8 +104,6 @@ class DB:
 		self.books = []
 		self.chapters = []
 		self.chapters_interleaved = []
-		self.chapters_per_book = []
-		self.book_chap_offset = []
 
 		self.episodes = []
 		self.num_seasons = 0

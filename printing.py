@@ -226,7 +226,7 @@ def print_book_title_cells():
 		op(_tab + "<th rowspan=\"2\" class=\"" + classes + "\" onclick=\"expandbook(" + str(n + 1) + ")\">")
 
 		if _useImgHeaders:
-			opl("<img src=\"imgs/b" + str(n + 1) + "coll.png\" alt=\"" + g_db.books[n] + "\">")
+			opl("<img src=\"imgs/b" + str(n + 1) + "coll.png\" alt=\"" + g_db.books[n].name + "\">")
 		else:
 			op("<div class=\"booktitleabbrevrotate\"><div class=\"booktitleabbrevinside\">")
 			op(_bookAbbrevs[n])
@@ -235,13 +235,13 @@ def print_book_title_cells():
 		opl("</th>")
 
 		classes = "booktitle b" + str(n + 1) + "title b" + str(n + 1)
-		op(_tab + "<th colspan=\"" + str(g_db.chapters_per_book[n]) + "\" class=\"" + classes + "\" onclick=\"collapsebook(" + str(
+		op(_tab + "<th colspan=\"" + str(g_db.books[n].num_chapters) + "\" class=\"" + classes + "\" onclick=\"collapsebook(" + str(
 			n + 1) + ")\">")
 
 		if _useImgHeaders:
-			opl("<img src=\"imgs/b" + str(n + 1) + "title.png\" alt=\"" + g_db.books[n] + "\">")
+			opl("<img src=\"imgs/b" + str(n + 1) + "title.png\" alt=\"" + g_db.books[n].name + "\">")
 		else:
-			op(g_db.books[n])
+			op(g_db.books[n].name)
 		opl("</th>")
 
 		if (n == 4):
@@ -252,7 +252,7 @@ def print_book_title_cells():
 			op(_tab + "<th rowspan=\"2\" class=\"" + classes + "\" onclick=\"expandbook(45)\">")
 
 			if _useImgHeaders:
-				opl("<img src=\"imgs/b45coll.png\" alt=\"" + g_db.books[3] + " &amp; " + g_db.books[4] + " (Chronological)\">")
+				opl("<img src=\"imgs/b45coll.png\" alt=\"" + g_db.books[3].name + " &amp; " + g_db.books[4].name + " (Chronological)\">")
 			else:
 				op("<div class=\"booktitleabbrevrotate\"><div class=\"booktitleabbrevinside\">")
 				op("4+5")
@@ -261,12 +261,12 @@ def print_book_title_cells():
 			opl("</th>")
 
 			classes = "booktitle b45title b45"
-			op(_tab + "<th colspan=\"" + str(g_db.chapters_per_book[3] + g_db.chapters_per_book[4]) + "\" class=\"" + classes + "\" onclick=\"collapsebook(45)\">")
+			op(_tab + "<th colspan=\"" + str(g_db.books[3].num_chapters + g_db.books[4].num_chapters) + "\" class=\"" + classes + "\" onclick=\"collapsebook(45)\">")
 
 			if _useImgHeaders:
-				op("<img src=\"imgs/b45title.png\" alt=\"" + g_db.books[3] + " &amp; " + g_db.books[4] + " (Chronological)\">")
+				op("<img src=\"imgs/b45title.png\" alt=\"" + g_db.books[3].name + " &amp; " + g_db.books[4].name + " (Chronological)\">")
 			else:
-				op(g_db.books[3] + " &amp; " + g_db.books[4] + " (Chronological)")
+				op(g_db.books[3] + " &amp; " + g_db.books[4].name + " (Chronological)")
 
 			opl("</th>")
 
@@ -320,7 +320,7 @@ def print_chapter_title_cells(chapters):
 
 			if (chap.number == 0):
 				classes += " lb"
-			elif (n == g_db.chapters_per_book[int(chap.book_num) - 1] - 1):
+			elif (n == g_db.books[int(chap.book_num) - 1].num_chapters - 1):
 				classes += " rb"
 
 		elif combinedsection:
@@ -328,7 +328,7 @@ def print_chapter_title_cells(chapters):
 
 			if (n == 0):
 				classes += " lb"
-			elif (chapNum == (g_db.chapters_per_book[4] - 1)):
+			elif (chapNum == (g_db.books[4].num_chapters - 1)):
 				classes += " rb"
 
 		else:
@@ -336,7 +336,7 @@ def print_chapter_title_cells(chapters):
 
 			if (chap.number == 0):
 				classes += " lb"
-			elif (n == g_db.chapters_per_book[int(chap.book_num) - 1] - 1):
+			elif (n == g_db.books[int(chap.book_num) - 1].num_chapters - 1):
 				classes += " rb"
 
 		if n % _nStripe == 0:
@@ -483,12 +483,12 @@ def print_body_cells(seasEpNum, totEpNum):
 		if not combined45section:
 			if (chapNum == 0):
 				classes += "  lb"
-			if (chapNum == g_db.chapters_per_book[bookNum - 1] - 1):
+			if (chapNum == g_db.books[bookNum - 1].num_chapters - 1):
 				classes += " rb"
 		else:
 			if (bookNum == 4 and chapNum == 0):
 				classes += " lb"
-			if (bookNum == 5 and chapNum == (g_db.chapters_per_book[4] - 1)):
+			if (bookNum == 5 and chapNum == (g_db.books[4].num_chapters - 1)):
 				classes += " rb"
 
 		if (n % _nStripe == 0) or ((seasEpNum - 1) % _nStripe == 0):
