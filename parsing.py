@@ -30,6 +30,7 @@ A note from the author:
 
 
 from utils import *
+from book_show_types import *
 import os.path
 import csv
 
@@ -39,54 +40,19 @@ _combinedFilename = os.path.join('input', 'combined.txt')
 _episodeFilename = os.path.join('input', 'episodes.csv')
 _connectionsFilename = os.path.join('input', 'connections.csv')
 
-_tab="\t"
+_tab = "\t"
 
 
-def findChapter(chapName, bookNum):
-	global g_chapterList
-	global g_bookNChap
-
-	chapter = [item for item in g_chapterList if (item['bookNum'] == bookNum) and (item['name'] == chapName)]
-
-	if len(chapter) == 0:
-		return {}
-
-	if len(chapter) > 1:
-		print("WARNING: multiple chapters found matching book #", bookNum, "named", chapName)
-
-	return chapter[0]
-
-
-# If wanting to return total chapter number instead
-# The 1 is because chapters are zero-indexed in csv file (though probably want to change this later)
-# return int(chapter[0]['number']) + 1 + sum(g_bookNChap[0:bookNum-1])
-
-
-def findChapterByNumber(bookNum, chapNum):
-	global g_chapterList
-	global g_bookNChap
-
-	chapter = [item for item in g_chapterList if (item['bookNum'] == bookNum) and (item['chapNum'] == chapNum)]
-
-	if len(chapter) == 0:
-		return {}
-
-	if len(chapter) > 1:
-		print("WARNING: multiple chapters found matching book #", bookNum, " chap#", chapNum, sep="")
-
-	return chapter[0]
-
-
-def parseChapters():
+def parse_chapters():
 	print("Processing", _chapterFilename)
-	chapterList = []
-	bookList = []
-	bookNChap = []
-	totChapNum = 0
+	chapter_list = []
+	book_list = []
+	book_num_chap = []
+	total_chap_num = 0
 	with open(_chapterFilename) as csvFile:
 		chapterfile = csv.reader(csvFile)
 		bookname = ""
-		bookNum = 0
+		book_num = 0
 		for row in chapterfile:
 			prevbookname = bookname
 			bookname = row[0]
@@ -109,34 +75,35 @@ def parseChapters():
 				if (row[6] != ""):
 					storyline.append(row[6].lower())
 				occurred = row[7]
-				if bookname not in bookList:
-					bookList.append(bookname)
-					bookNum += 1
-					bookNChap.append(1)
+				if bookname not in book_list:
+					book_list.append(bookname)
+					book_num += 1
+					book_num_chap.append(1)
 				else:
-					bookNChap[bookNum - 1] += 1
+					book_num_chap[book_num - 1] += 1
 
-				totChapNum += 1
+				total_chap_num += 1
 
-				chapter = {'book': bookname,
-						   'bookNum': bookNum,
-						   'number': chapNum,
-						   'totChapNum': totChapNum,
-						   'name': chapName,
-						   'pov': povchar,
-						   'story': storyline,
-						   'location': location,
-						   'occurred': occurred}
+				chapter_list.append(Chapter(
+					name=chapName,
+					pov_char=povchar,
+					number=chapNum,
+					book=bookname,
+					book_num=book_num,
+					tot_chap_num=total_chap_num,
+					storyline=storyline,
+					location=location,
+					occurred=occurred,
+				))
 
-				chapterList.append(chapter)
-	debug_print(repr(chapterList[0:10]))
+	debug_print(repr(chapter_list[0:10]))
 
-	return chapterList, bookList, bookNChap
+	return chapter_list, book_list, book_num_chap
 
 
-def parseCombinedOrder():
+def parse_combined_order(chapter_list, book_chap_offset):
 	print("Processing", _combinedFilename)
-	combinedChapterList = []
+	combined_chapter_list = []
 	with open(_combinedFilename, 'rU') as txtFile:
 		line = txtFile.readline()
 		while line:
@@ -144,13 +111,13 @@ def parseCombinedOrder():
 			words = line.split()
 			words = [word.lower() for word in words]
 
-			bookNum = 0
+			book_num = 0
 
 			if 'affc' in words:
-				bookNum = 4
+				book_num = 4
 				n = words.index('affc')
 			elif 'adwd' in words:
-				bookNum = 5
+				book_num = 5
 				n = words.index('adwd')
 			else:
 				print("ERROR: neither AFFC nor ADWD not found in line:")
@@ -161,17 +128,17 @@ def parseCombinedOrder():
 			# combined.txt 1-indexes chapters
 			chapNum = int(words[n + 1]) - 1
 
-			chapter = g_chapterList[chapNum + g_bookChapOffset[bookNum - 1]]
-			combinedChapterList.append(chapter)
+			chapter = chapter_list[chapNum + book_chap_offset[book_num - 1]]
+			combined_chapter_list.append(chapter)
 
 			debug_print(chapter)
 			debug_print(line)
 
 			line = txtFile.readline()
-	return combinedChapterList
+	return combined_chapter_list
 
 
-def parseEpisodes():
+def parse_episodes():
 	print("Processing", _episodeFilename)
 	episodeList = []
 	with open(_episodeFilename) as csvFile:
@@ -182,109 +149,99 @@ def parseEpisodes():
 				epname = row[3]
 				epname = epname[1:-1]
 				debug_print(epname)
-				episode = {'season': season, 'name': epname}
-				episodeList.append(episode)
+				episodeList.append(Episode(season=season, name=epname))
 	return episodeList
 
 
-def parseConnections():
+def parse_connections(db):
 	print("Processing", _connectionsFilename)
 	connList = []
 	with open(_connectionsFilename) as csvFile:
 		connectionfile = csv.reader(csvFile)
 		for row in connectionfile:
 			if row[0].isdigit():
-				epNum = int(row[1]) + 10 * (int(row[0]) - 1)
-				bookNum = int(row[2])
-				chapName = row[3]
+				ep_num = int(row[1]) + 10 * (int(row[0]) - 1)
+				book_num = int(row[2])
+				chap_name = row[3]
 				strength = row[4]
 				major = row[5]
 				notes = row[6]
 
-				if (chapName == '') or (chapName == '?'):
+				if (chap_name == '') or (chap_name == '?'):
 					continue
 
 				if strength not in ['0', '1']:
 					print("WARNING: chapter strength not 0 or 1")
-					print(_tab, "book ", bookNum, " chapName ", chapName, sep="")
+					print(_tab, "book ", book_num, " chap_name ", chap_name, sep="")
 					print(_tab, "strength: ", strength, sep="")
 					continue
 				strength = int(strength)
 
 				# Make sure chapter name is in the list of chapters!
-				chapter = findChapter(chapName, bookNum)
+				chapter = db.find_chapter(chap_name, book_num)
 
-				if (chapter == {}):
+				if not chapter:
 					print("WARNING: Chapter not found:")
-					print(_tab, "book ", bookNum, " chapName ", chapName, sep="")
+					print(_tab, "book ", book_num, " chap_name ", chap_name, sep="")
 					print(_tab, "notes: ", notes, sep="")
 
 				# This line causes it to crash when the chapter is incorrectly named (which is okay!)
-				chapNum = int(chapter['number']) + 1 + sum(g_bookNChap[0:bookNum - 1])
+				chap_num = int(chapter.number) + 1 + sum(db.chapters_per_book[0:book_num - 1])
 
-				debug_print("chapName:", chapName, "chapNum:", chapNum)
+				debug_print("chap_name:", chap_name, "chap_num:", chap_num)
 
-				connection = {'epNum': epNum,
-							  'bookNum': bookNum,
-							  'chapName': chapName,
-							  'totChapNum': chapNum,
-							  'strength': strength,
-							  'major': major,
-							  'notes': notes}
-
-				connList.append(connection)
+				connList.append(Connection(
+					ep_num=ep_num,
+					book_num=book_num,
+					chap_name=chap_name,
+					chap_num=chap_num,
+					strength=strength,
+					major=major,
+					notes=notes,
+				))
 
 	debug_print(repr(connList[0:10]))
 
 	return connList
 
 
-def do_parsing():
-	global g_chapterList, g_bookList, g_interleavedChapterList
-	global g_bookNChap, g_bookChapOffset
-	global g_episodeList, g_connList
+def do_parsing() -> DB:
 
-	g_chapterList, g_bookList, g_bookNChap = parseChapters()
-	g_bookChapOffset = cumsum(g_bookNChap)
+	db = DB()
+
+	db.chapters, db.books, db.chapters_per_book = parse_chapters()
+
+	db.book_chap_offset = cumsum(db.chapters_per_book)
 
 	#prepend 0 to start
-	g_bookChapOffset[:0] = [0]
+	db.book_chap_offset[:0] = [0]
 
 	print("")
-	print(len(g_chapterList), "chapters in", len(g_bookList), "books:")
-	for n in range(len(g_bookList)):
-		print(n+1, g_bookList[n], '-', g_bookNChap[n], 'chapters, first chapter is', g_bookChapOffset[n]+1, 'overall')
+	print(len(db.chapters), "chapters in", len(db.books), "books:")
+	for n in range(len(db.books)):
+		print(n+1, db.books[n], '-', db.chapters_per_book[n], 'chapters, first chapter is', db.book_chap_offset[n]+1, 'overall')
 	print("")
 
-	combinedChapterList = parseCombinedOrder()
+	combined_chapter_list = parse_combined_order(db.chapters, db.book_chap_offset)
 
-	print(len(combinedChapterList), "chapters in books 4+5")
+	print(len(combined_chapter_list), "chapters in books 4+5")
 
 	# Have to use list(), otherwise it just copies reference and that's bad
-	g_interleavedChapterList = list(g_chapterList)
-	# Insert combined chapter list into g_chapterList
-	g_interleavedChapterList[g_bookChapOffset[5]:g_bookChapOffset[5]] = combinedChapterList
+	db.chapters_interleaved = list(db.chapters)
+	# Insert combined chapter list into g_chapter_list
+	db.chapters_interleaved[db.book_chap_offset[5]:db.book_chap_offset[5]] = combined_chapter_list
 
-	for chapter in g_interleavedChapterList:
+	for chapter in db.chapters_interleaved:
 		debug_print(repr(chapter))
 
 	print("")
 
-	g_episodeList = parseEpisodes()
-	numEpisodes = len(g_episodeList)
-	print(repr(numEpisodes), "episodes")
+	db.episodes = parse_episodes()
+	print("%i episodes" % len(db.episodes))
 
 	print("")
 
-	g_connList = parseConnections()
-	print(len(g_connList), "episode-chapter connections")
+	db.connections = parse_connections(db)
+	print("%i episode-chapter connections" % len(db.connections))
 
-	return dict(
-		g_chapterList=g_chapterList,
-		g_bookList=g_bookList,
-		g_interleavedChapterList=g_interleavedChapterList,
-		g_bookNChap=g_bookNChap,
-		g_bookChapOffset=g_bookChapOffset,
-		g_episodeList=g_episodeList,
-		g_connList=g_connList,
-	)
+	return db

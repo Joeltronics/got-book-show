@@ -70,6 +70,10 @@ _bookAbbrevs = ['AGoT','ACoK','ASoS','AFfC','ADwD','TWoW','ADoS']
 _maxChapNameLength = 15
 
 
+# Globals
+g_db = None
+
+
 # macro to output a line
 def opl(line):
 	# global vars g_opInterVer and g_opPrintVer are switches to turning printing to interactive version and print version on or off
@@ -92,27 +96,28 @@ def op(line):
 		g_outFilePrint.write(line)
 
 
-def isChapNameEmpty(chapName):
-	x = ''.join(ch for ch in chapName if ch.isalnum())
+def is_chap_name_empty(chap_name):
+	x = ''.join(ch for ch in chap_name if ch.isalnum())
 	return (x == '')
 
 
 # FIXME: this assumes always 10 episodes per season!
-def getSeasonNumForEpNum(epNum):
-	return ((epNum - 1) // 10) + 1
+def get_season_num_for_ep_num(ep_num):
+	return ((ep_num - 1) // 10) + 1
 
 
-def getAllChaptersWithPov(pov):
-	chaps = [item for item in g_chapterList if item['pov'] == pov]
-	chaps = sorted(chaps, key=lambda k: k['totChapNum'])
-	return chaps
+def get_all_chapters_with_pov(pov):
+	assert g_db is not None
+	chapters = [chapter for chapter in g_db.chapters if chapter['pov'] == pov]
+	chapters = sorted(chapters, key=lambda k: k['totChapNum'])
+	return chapters
 
 
 # Unused, and doesn't work 100% (can enable with _getSeasonOfChap = True)
 # This whole function is probably a bad idea, as this is somewhat subjective and should
 # probably just be manually set like the connections themselves
 # In any case, hiding spoilers by season isn't implemented anyway, so this won't do anything useful
-def getSeasonNumForChapter(chapter, strongConnsOnly=False):
+def get_season_num_for_chapter(chapter, strong_conns_only=False):
 	# Criteria:
 	# 1. If chapter name is empty (e.g. unreleased chapters that show '?'), return 0
 	# 2. If there is a strong connection, use 1st season the connection occurs in
@@ -120,33 +125,35 @@ def getSeasonNumForChapter(chapter, strongConnsOnly=False):
 	# 4. If there's a weak connection, return one of those (currently first, but that may need to change)
 	# 5. Find next POV chapter of that character with a strong connection and use that one
 
-	if isChapNameEmpty(chapter['name']):
+	assert g_db is not None
+
+	if is_chap_name_empty(chapter['name']):
 		return 0
 
 	# Make list of all connections that match this chapter
-	conns = [item for item in g_connList if item['totChapNum'] == chapter['totChapNum']]
+	conns = [item for item in g_db.connections if item['totChapNum'] == chapter['totChapNum']]
 	conns = sorted(conns, key=lambda k: k['epNum'])
 
-	if strongConnsOnly:
+	if strong_conns_only:
 		strongconns = [item for item in conns if item['strength'] > 0]
 
 		if strongconns != []:
-			return getSeasonNumForEpNum(strongconns[0]['epNum'])
+			return get_season_num_for_ep_num(strongconns[0]['epNum'])
 
 	if chapter['occurred'] == '0':
 		return 0
 
-	if not strongConnsOnly:
+	if not strong_conns_only:
 		if conns != []:
-			return getSeasonNumForEpNum(conns[0]['epNum'])
+			return get_season_num_for_ep_num(conns[0]['epNum'])
 
 	# Find next POV chapter of this character and use that chapter's number (recursively)
-	chaps = getAllChaptersWithPov(chapter['pov'])
+	chaps = get_all_chapters_with_pov(chapter['pov'])
 	idx = chaps.index(chapter)
 	if (idx + 1) < len(chaps):
 		nextPovChap = chaps[idx + 1]
-		# TODO: change this to strongConnsOnly=True (but make that actually work)
-		return getSeasonNumForChapter(nextPovChap, strongConnsOnly=False)
+		# TODO: change this to strong_conns_only=True (but make that actually work)
+		return get_season_num_for_chapter(nextPovChap, strong_conns_only=False)
 
 	# No connection was found
 	print('WARNING: Book', chapter['bookNum'], 'Chapter', chapter['name'],
@@ -154,7 +161,7 @@ def getSeasonNumForChapter(chapter, strongConnsOnly=False):
 	return 0
 
 
-def printHtmlHeader():
+def print_html_header():
 	global g_opInterVer, g_opPrintVer
 	print("Writing HTML header")
 
@@ -186,7 +193,7 @@ def printHtmlHeader():
 	g_opPrintVer = True
 
 
-def printHtmlFooter():
+def print_html_footer():
 	global g_opInterVer, g_opPrintVer
 	print("Writing HTML footer")
 
@@ -210,15 +217,16 @@ def printHtmlFooter():
 	g_opPrintVer = True
 
 
-def printBookTitleCells():
-	for n in range(len(g_bookList)):
+def print_book_title_cells():
+	assert g_db is not None
+	for n in range(len(g_db.books)):
 
 		# Column that summarizes book (for when column set is collapsed)
 		classes = "booktitle b" + str(n + 1) + "title b" + str(n + 1) + "c"
 		op(_tab + "<th rowspan=\"2\" class=\"" + classes + "\" onclick=\"expandbook(" + str(n + 1) + ")\">")
 
 		if _useImgHeaders:
-			opl("<img src=\"imgs/b" + str(n + 1) + "coll.png\" alt=\"" + g_bookList[n] + "\">")
+			opl("<img src=\"imgs/b" + str(n + 1) + "coll.png\" alt=\"" + g_db.books[n] + "\">")
 		else:
 			op("<div class=\"booktitleabbrevrotate\"><div class=\"booktitleabbrevinside\">")
 			op(_bookAbbrevs[n])
@@ -227,13 +235,13 @@ def printBookTitleCells():
 		opl("</th>")
 
 		classes = "booktitle b" + str(n + 1) + "title b" + str(n + 1)
-		op(_tab + "<th colspan=\"" + str(g_bookNChap[n]) + "\" class=\"" + classes + "\" onclick=\"collapsebook(" + str(
+		op(_tab + "<th colspan=\"" + str(g_db.chapters_per_book[n]) + "\" class=\"" + classes + "\" onclick=\"collapsebook(" + str(
 			n + 1) + ")\">")
 
 		if _useImgHeaders:
-			opl("<img src=\"imgs/b" + str(n + 1) + "title.png\" alt=\"" + g_bookList[n] + "\">")
+			opl("<img src=\"imgs/b" + str(n + 1) + "title.png\" alt=\"" + g_db.books[n] + "\">")
 		else:
-			op(g_bookList[n])
+			op(g_db.books[n])
 		opl("</th>")
 
 		if (n == 4):
@@ -244,8 +252,7 @@ def printBookTitleCells():
 			op(_tab + "<th rowspan=\"2\" class=\"" + classes + "\" onclick=\"expandbook(45)\">")
 
 			if _useImgHeaders:
-				opl("<img src=\"imgs/b45coll.png\" alt=\"" + g_bookList[3] + " &amp; " + g_bookList[
-					4] + " (Chronological)\">")
+				opl("<img src=\"imgs/b45coll.png\" alt=\"" + g_db.books[3] + " &amp; " + g_db.books[4] + " (Chronological)\">")
 			else:
 				op("<div class=\"booktitleabbrevrotate\"><div class=\"booktitleabbrevinside\">")
 				op("4+5")
@@ -254,28 +261,28 @@ def printBookTitleCells():
 			opl("</th>")
 
 			classes = "booktitle b45title b45"
-			op(_tab + "<th colspan=\"" + str(
-				g_bookNChap[3] + g_bookNChap[4]) + "\" class=\"" + classes + "\" onclick=\"collapsebook(45)\">")
+			op(_tab + "<th colspan=\"" + str(g_db.chapters_per_book[3] + g_db.chapters_per_book[4]) + "\" class=\"" + classes + "\" onclick=\"collapsebook(45)\">")
 
 			if _useImgHeaders:
-				op("<img src=\"imgs/b45title.png\" alt=\"" + g_bookList[3] + " &amp; " + g_bookList[
-					4] + " (Chronological)\">")
+				op("<img src=\"imgs/b45title.png\" alt=\"" + g_db.books[3] + " &amp; " + g_db.books[4] + " (Chronological)\">")
 			else:
-				op(g_bookList[3] + " &amp; " + g_bookList[4] + " (Chronological)")
+				op(g_db.books[3] + " &amp; " + g_db.books[4] + " (Chronological)")
 
 			opl("</th>")
 
 
-def printChapterTitleCells():
+def print_chapter_title_cells(chapters):
+	assert g_db is not None
+	
 	n = 0
 	combinedsection = 0
 	prevchapbooknum = -1
 	prevchapnum = -1
 
-	for chap in g_interleavedChapterList:
+	for chap in g_db.chapters_interleaved:
 
-		bookNum = int(chap['bookNum'])
-		chapNum = int(chap['number'])
+		bookNum = int(chap.book_num)
+		chapNum = int(chap.number)
 
 		# Determine if chapter is new book
 
@@ -296,10 +303,10 @@ def printChapterTitleCells():
 						sep="")
 			n = 0
 
-		chapName = chap['name']
+		chapName = chap.name
 
 		# For "?" chapters after TWOW preview chaps
-		chapNameIsntReal = isChapNameEmpty(chapName)
+		chapNameIsntReal = is_chap_name_empty(chapName)
 
 		# if name longer than ~15 characters, abbreviate
 		if combinedsection:
@@ -309,11 +316,11 @@ def printChapterTitleCells():
 			chapName = abbrevString(chapName, _maxChapNameLength)
 
 		if chapNameIsntReal:
-			classes = "cn b" + str(chap['bookNum']) + " bb"
+			classes = "cn b" + str(chap.book_num) + " bb"
 
-			if (chap['number'] == 0):
+			if (chap.number == 0):
 				classes += " lb"
-			elif (n == g_bookNChap[int(chap['bookNum']) - 1] - 1):
+			elif (n == g_db.chapters_per_book[int(chap.book_num) - 1] - 1):
 				classes += " rb"
 
 		elif combinedsection:
@@ -321,15 +328,15 @@ def printChapterTitleCells():
 
 			if (n == 0):
 				classes += " lb"
-			elif (chapNum == (g_bookNChap[4] - 1)):
+			elif (chapNum == (g_db.chapters_per_book[4] - 1)):
 				classes += " rb"
 
 		else:
-			classes = "cn b" + str(chap['bookNum']) + " bb"
+			classes = "cn b" + str(chap.book_num) + " bb"
 
-			if (chap['number'] == 0):
+			if (chap.number == 0):
 				classes += " lb"
-			elif (n == g_bookNChap[int(chap['bookNum']) - 1] - 1):
+			elif (n == g_db.chapters_per_book[int(chap.book_num) - 1] - 1):
 				classes += " rb"
 
 		if n % _nStripe == 0:
@@ -343,7 +350,7 @@ def printChapterTitleCells():
 
 			if _getSeasonOfChap:
 				# Get episode number that corresponds to this chapter (used for hiding show spoilers)
-				chapSeason = getSeasonNumForChapter(chap)
+				chapSeason = get_season_num_for_chapter(chap)
 
 				debug_print('Chapter', chap['totChapNum'], 'chapSeason', chapSeason)
 
@@ -352,22 +359,23 @@ def printChapterTitleCells():
 				elif _hideShowSpoilersFromChapNames:
 					classes2 += " seas" + str(chapSeason)
 
-			elif chap['occurred'] == '0':
+			elif chap.occurred == '0':
 				classes2 += " ho"
 
-			opl(_tab + "<th class=\"" + classes + "\" title=\"" + chap[
-				'name'] + "\"><div class=\"cnr\"><div class=\"" + classes2 + "\">" + chapName + "</div></div></th>")
+			opl(_tab + "<th class=\"" + classes + "\" title=\"" + chap.name + "\"><div class=\"cnr\"><div class=\"" + classes2 + "\">" + chapName + "</div></div></th>")
 		n += 1
 
 		prevchapbooknum = bookNum
 		prevchapnum = chapNum
 
 
-def printBodyCells(seasEpNum, totEpNum):
-	# First, make list of all connections that match this episode
-	conns = [item for item in g_connList if item['epNum'] == totEpNum]
+def print_body_cells(seasEpNum, totEpNum):
+	assert g_db is not None
 
-	connums = [item['totChapNum'] for item in conns]
+	# First, make list of all connections that match this episode
+	conns = [item for item in g_db.connections if item.ep_num == totEpNum]
+
+	connums = [item.tot_chap_num for item in conns]
 
 	debug_print("episode ", totEpNum, ", ", len(conns), " connections: ", repr(connums), sep="")
 	debug_print(repr(conns), _eol)
@@ -379,14 +387,14 @@ def printBodyCells(seasEpNum, totEpNum):
 
 	debugprintthisline = (totEpNum == 1)
 
-	for chapter in g_interleavedChapterList:
+	for chapter in g_db.chapters_interleaved:
 
 		isnewbook = 0
 
-		bookNum = int(chapter['bookNum'])
-		chapNum = int(chapter['number'])
+		bookNum = int(chapter.book_num)
+		chapNum = int(chapter.number)
 
-		totChapNum = chapter['totChapNum']
+		totChapNum = chapter.tot_chap_num
 
 		# Determine if chapter is new book
 
@@ -435,9 +443,9 @@ def printBodyCells(seasEpNum, totEpNum):
 
 			# Get all connections matching this episode
 			if not combined45section:
-				epbookconns = [item for item in conns if ((item['epNum'] == totEpNum) and (item['bookNum'] == bookNum))]
+				epbookconns = [item for item in conns if ((item.ep_num == totEpNum) and (item.book_num == bookNum))]
 			else:
-				epbookconns = [item for item in conns if ((item['epNum'] == totEpNum) and (item['bookNum'] in [4, 5]))]
+				epbookconns = [item for item in conns if ((item.ep_num == totEpNum) and (item.book_num in [4, 5]))]
 
 			# Is there a connection? If so, make div inside cell
 			if epbookconns != []:
@@ -446,7 +454,7 @@ def printBodyCells(seasEpNum, totEpNum):
 
 				# Now figure out if there are strong connections or only weak
 
-				strongepbookconns = [item for item in epbookconns if item['strength'] == 1]
+				strongepbookconns = [item for item in epbookconns if item.strength == 1]
 
 				if strongepbookconns == []:
 					classes += " wc"
@@ -475,12 +483,12 @@ def printBodyCells(seasEpNum, totEpNum):
 		if not combined45section:
 			if (chapNum == 0):
 				classes += "  lb"
-			if (chapNum == g_bookNChap[bookNum - 1] - 1):
+			if (chapNum == g_db.chapters_per_book[bookNum - 1] - 1):
 				classes += " rb"
 		else:
 			if (bookNum == 4 and chapNum == 0):
 				classes += " lb"
-			if (bookNum == 5 and chapNum == (g_bookNChap[4] - 1)):
+			if (bookNum == 5 and chapNum == (g_db.chapters_per_book[4] - 1)):
 				classes += " rb"
 
 		if (n % _nStripe == 0) or ((seasEpNum - 1) % _nStripe == 0):
@@ -496,11 +504,11 @@ def printBodyCells(seasEpNum, totEpNum):
 
 		# Is there a connection? If so, make div inside cell
 		if totChapNum in connums:
-			conn = [item for item in conns if item['totChapNum'] == totChapNum][0]
+			conn = [item for item in conns if item.tot_chap_num == totChapNum][0]
 
-			chap = g_chapterList[totChapNum - 1]
-			povchar = chap['pov'].lower()
-			location = chap['location'].lower()
+			chap = g_db.chapters[totChapNum - 1]
+			povchar = chap.pov.lower()
+			location = chap.location.lower()
 
 			classes = "c pov" + povchar
 
@@ -514,12 +522,12 @@ def printBodyCells(seasEpNum, totEpNum):
 				if storyline != "":
 					classes += " sto" + storyline
 
-			if conn['strength'] == 0:
+			if conn.strength == 0:
 				classes += " wc"
 			else:
 				classes += " sc"
 
-			title = re.sub('"', '&quot;', conn['notes'])
+			title = re.sub('"', '&quot;', conn.notes)
 
 			op("<div class=\"" + classes + "\" title=\"" + title + "\"></div>")
 
@@ -529,7 +537,9 @@ def printBodyCells(seasEpNum, totEpNum):
 
 # isBody indicates if this is the one that goes inside the main table
 # isEnd indicates if this is the one that goes at the very end (for print version)
-def printEpisodeRows(isBody, isEnd=False):
+def print_episode_rows(isBody, isEnd=False):
+	assert g_db is not None
+
 	prevseason = ''
 	seasEpNum = 0
 	totEpNum = 0
@@ -537,7 +547,7 @@ def printEpisodeRows(isBody, isEnd=False):
 	hideOnFloat = ''
 	if isBody:
 		hideOnFloat = ' hideonfloat'
-	for episode in g_episodeList:
+	for episode in g_db.episodes:
 
 		totEpNum += 1
 
@@ -546,19 +556,19 @@ def printEpisodeRows(isBody, isEnd=False):
 		else:
 			stripe = ''
 
-		seasonclass = "seas" + episode['season']
+		seasonclass = "seas" + episode.season
 
 		seasontitleclass = seasonclass + "title"
 
-		if int(episode['season']) == _currSeason:
+		if int(episode.season) == _currSeason:
 			if totEpNum <= _latestEpisode:
 				seasonclass += "aired"
 			else:
 				seasonclass += "unaired"
 
-		if episode['season'] != prevseason:
+		if episode.season != prevseason:
 			opl("<tr class=\"eprow epkeyrow " + seasonclass + "\">")
-			prevseason = episode['season']
+			prevseason = episode.season
 			seasEpNum = 1
 		else:
 			opl("<tr class=\"eprow " + seasonclass + "\">")
@@ -573,19 +583,19 @@ def printEpisodeRows(isBody, isEnd=False):
 		if isEnd:
 			op(_tab + "<th class=\"eptitle lb" + classes + hideOnFloat + "\">")
 			op("<div class=\"eptitleinside\">")
-			opl(episode['name'] + "</div></th>")
+			opl(episode.name + "</div></th>")
 			opl(_tab + "<th class=\"epnum" + classes + hideOnFloat + " rb\">" + str(seasEpNum) + "</th>")
 
 		if seasEpNum == 1:
 			opl(_tab + "<th rowspan=\"10\" class=\"seasontitle " + seasontitleclass + hideOnFloat + "\">")
 
 			if _useImgHeaders:
-				opl("<img src=\"imgs/s" + str(episode['season']) + "title.png\" alt=\"Season " + str(
-					episode['season']) + "\">")
+				opl("<img src=\"imgs/s" + str(episode.season) + "title.png\" alt=\"Season " + str(
+					episode.season) + "\">")
 			else:
 				opl(_tab + _tab + "<div class=\"seasonnamerotate\">")
 				opl(_tab + _tab + _tab + "<div class=\"seasonnameinside\">Season " + toRomanNumeral(
-					int(episode['season'])) + "</div>")
+					int(episode.season)) + "</div>")
 				opl(_tab + _tab + "</div>")
 
 			opl(_tab + "</th>")
@@ -594,54 +604,19 @@ def printEpisodeRows(isBody, isEnd=False):
 			opl(_tab + "<th class=\"epnum" + classes + hideOnFloat + "\">" + str(seasEpNum) + "</th>")
 			op(_tab + "<th class=\"eptitle rb" + classes + hideOnFloat + "\">")
 			op("<div class=\"eptitleinside\">")
-			opl(episode['name'] + "</div></th>")
+			opl(episode.name + "</div></th>")
 
 		if isBody:
-			printBodyCells(seasEpNum, totEpNum)
+			print_body_cells(seasEpNum, totEpNum)
 
 		opl("</tr>")
 
 
-# This is currently unused, and probably doesn't work!
-def printSeasonsUseRow():
-	opl("<tr>")
-	opl(
-		_tab + "<td class=\"hidden\" colspan=\"2\"></td><td class=\"eptitle seasonsuse\">Seasons that use this chapter:</td>")
-	for book in range(len(g_bookList)):
-		n = 0
-		op(_tab)
-		for chap in range(g_bookNChap[book]):
-
-			classes = "b" + str(book + 1) + " bb"
-
-			if (chap == g_bookNChap[book] - 1):
-				classes += " rb"
-			elif (n == 0):
-				classes += " lb"
-			if n % _nStripe == 0:
-				classes += " s"
-
-			op("<td class=\"" + classes + "\"></td>")
-			n += 1
-		op(_eol)
-	opl("</tr>")
-
-
-def do_printing(parsed):
+def do_printing(db):
+	global g_db
 	global g_inFileInter, g_inFilePrint, g_outFileInter, g_outFilePrint, g_opInterVer, g_opPrintVer
 
-	# Vars output from parser
-	global g_chapterList, g_bookList, g_interleavedChapterList
-	global g_bookNChap, g_bookChapOffset
-	global g_episodeList, g_connList
-
-	g_chapterList = parsed['g_chapterList']
-	g_bookList = parsed['g_bookList']
-	g_interleavedChapterList = parsed['g_interleavedChapterList']
-	g_bookNChap = parsed['g_bookNChap']
-	g_bookChapOffset = parsed['g_bookChapOffset']
-	g_episodeList = parsed['g_episodeList']
-	g_connList = parsed['g_connList']
+	g_db = db
 
 	g_opInterVer = True
 	g_opPrintVer = True
@@ -653,7 +628,7 @@ def do_printing(parsed):
 	g_outFileInter = open(_outputFilenameInter,'w')
 	g_outFilePrint = open(_outputFilenamePrint,'w')
 
-	printHtmlHeader()
+	print_html_header()
 
 	opl("<div id=\"tablediv\" class=\"cpov spoiler_b0\">")
 
@@ -672,7 +647,8 @@ def do_printing(parsed):
 	opl("<tr></tr>")
 	opl("</thead>")
 
-	printEpisodeRows(isBody=False)
+	print_episode_rows(isBody=False)
+
 
 	g_opPrintVer = False
 	opl("</table>")
@@ -692,12 +668,12 @@ def do_printing(parsed):
 	# Non-floating top-left box
 	opl(_tab + "<th colspan=\"3\" rowspan=\"2\" class=\"cornerbox hideonfloat\"><div class=\"cornerboxdiv\">" + _topLeftBox + "</div></th>")
 
-	printBookTitleCells()
+	print_book_title_cells()
 
 	opl("</tr>")
 	opl("<tr>")
 
-	printChapterTitleCells()
+	print_chapter_title_cells(db.chapters)
 
 	opl("</tr>")
 	opl("</thead>")
@@ -710,7 +686,7 @@ def do_printing(parsed):
 	print("***** Writing table body *****")
 	print("")
 
-	printEpisodeRows(isBody=True)
+	print_episode_rows(isBody=True)
 
 	opl("</tbody>")
 	opl("</table>")
@@ -730,7 +706,7 @@ def do_printing(parsed):
 	opl("<tr></tr>")
 	opl("</thead>")
 
-	printEpisodeRows(isBody=False, isEnd=True)
+	print_episode_rows(isBody=False, isEnd=True)
 
 	opl("</table>")
 
@@ -744,7 +720,7 @@ def do_printing(parsed):
 	print("***** Table body complete *****")
 	print("")
 
-	printHtmlFooter()
+	print_html_footer()
 
 	print("Closing HTML files")
 	g_inFileInter.close()
