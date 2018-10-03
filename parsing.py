@@ -35,20 +35,11 @@ import os.path
 import csv
 
 
-_booksFilename = os.path.join('input', 'books.csv')
-_chapterFilename = os.path.join('input', 'chapters.csv')
-_combinedFilename = os.path.join('input', 'combined.txt')
-_episodeFilename = os.path.join('input', 'episodes.csv')
-_connectionsFilename = os.path.join('input', 'connections.csv')
-
-_tab = "\t"
-
-
-def parse_books():
-	print("Processing %s" % _booksFilename)
+def parse_books(filename):
+	print("Processing %s" % filename)
 	book_list = []
 
-	with open(_booksFilename) as csv_file:
+	with open(filename) as csv_file:
 		reader = csv.reader(csv_file)
 		headers = next(reader)
 
@@ -66,13 +57,13 @@ def parse_books():
 	return book_list
 
 
-def parse_chapters(book_list):
-	print("Processing", _chapterFilename)
+def parse_chapters(filename, book_list):
+	print("Processing %s" % filename)
 
 	chapter_list = []
 	total_chap_num = 0
 
-	with open(_chapterFilename) as csvFile:
+	with open(filename) as csvFile:
 		reader = csv.reader(csvFile)
 		next(reader)
 
@@ -94,10 +85,6 @@ def parse_chapters(book_list):
 					# IF it's a "the" chapter, there should be a pov char set!
 					print("WARNING: no POV char given for chapter " + chapName)
 					povchar = "Other"
-			location = row[4]
-			storyline = [row[5].lower()]
-			if (row[6] != ""):
-				storyline.append(row[6].lower())
 			occurred = row[7]
 
 			matching_books = [book for book in book_list if book.name == bookname]
@@ -118,8 +105,6 @@ def parse_chapters(book_list):
 				number_in_book=chapNum,
 				name=chapName,
 				pov_char=povchar,
-				storyline=storyline,
-				location=location,
 				occurred=occurred,
 			))
 
@@ -135,10 +120,10 @@ def parse_chapters(book_list):
 	return chapter_list
 
 
-def parse_combined_order(chapters, books):
-	print("Processing", _combinedFilename)
+def parse_combined_order(filename, chapters, books):
+	print("Processing %s" % filename)
 	combined_chapter_list = []
-	with open(_combinedFilename, 'rU') as txtFile:
+	with open(filename, 'rU') as txtFile:
 		line = txtFile.readline()
 		while line:
 
@@ -172,10 +157,10 @@ def parse_combined_order(chapters, books):
 	return combined_chapter_list
 
 
-def parse_episodes():
-	print("Processing", _episodeFilename)
+def parse_episodes(filename):
+	print("Processing %s" % filename)
 	episode_list = []
-	with open(_episodeFilename) as csvFile:
+	with open(filename) as csvFile:
 
 		reader = csv.reader(csvFile)
 		next(reader)
@@ -195,10 +180,10 @@ def parse_episodes():
 	return episode_list
 
 
-def parse_connections(db):
-	print("Processing", _connectionsFilename)
+def parse_connections(filename, db):
+	print("Processing %s" % filename)
 	connList = []
-	with open(_connectionsFilename) as csvFile:
+	with open(filename) as csvFile:
 		connectionfile = csv.reader(csvFile)
 		for row in connectionfile:
 			if row[0].isdigit():
@@ -216,8 +201,8 @@ def parse_connections(db):
 
 				if strength not in ['0', '1']:
 					print("WARNING: chapter strength not 0 or 1")
-					print(_tab, "book ", book_num, " chap_name ", chap_name, sep="")
-					print(_tab, "strength: ", strength, sep="")
+					print("\tbook %i chap_name %s" % (book_num, chap_name))
+					print("\tstrength: %s" % strength)
 					continue
 				strength = int(strength)
 
@@ -226,8 +211,8 @@ def parse_connections(db):
 
 				if not chapter:
 					print("WARNING: Chapter not found:")
-					print(_tab, "book ", book_num, " chap_name ", chap_name, sep="")
-					print(_tab, "notes: ", notes, sep="")
+					print("\tbook %i chap_name %s" % (book_num, chap_name))
+					print("\tnotes: %s" % notes)
 
 				episode = db.episodes[ep_num - 1]
 
@@ -244,13 +229,19 @@ def parse_connections(db):
 	return connList
 
 
-def do_parsing() -> DB:
+def do_parsing(dir='input') -> DB:
+
+	books_filename = os.path.join(dir, 'books.csv')
+	chapter_filename = os.path.join(dir, 'chapters.csv')
+	combined_filename = os.path.join(dir, 'combined.txt')
+	episode_filename = os.path.join(dir, 'episodes.csv')
+	connections_filename = os.path.join(dir, 'connections.csv')
 
 	db = DB()
 
-	db.books = parse_books()
+	db.books = parse_books(books_filename)
 
-	db.chapters = parse_chapters(db.books)
+	db.chapters = parse_chapters(chapter_filename, db.books)
 
 	print("")
 	print("%i chapters in %i" % (len(db.chapters), len(db.books)))
@@ -258,7 +249,7 @@ def do_parsing() -> DB:
 		print("%i: %s" % (n+1, repr(book)))
 	print("")
 
-	combined_chapter_list = parse_combined_order(db.chapters, db.books)
+	combined_chapter_list = parse_combined_order(combined_filename, db.chapters, db.books)
 
 	print(len(combined_chapter_list), "chapters in books 4+5")
 
@@ -272,12 +263,12 @@ def do_parsing() -> DB:
 
 	print("")
 
-	db.episodes = parse_episodes()
+	db.episodes = parse_episodes(episode_filename)
 	print("%i episodes" % len(db.episodes))
 
 	print("")
 
-	db.connections = parse_connections(db)
+	db.connections = parse_connections(connections_filename, db)
 	print("%i episode-chapter connections" % len(db.connections))
 
 	return db

@@ -52,12 +52,8 @@ _tab="\t"
 _eol="\r\n"
 
 _topLeftBox = '<img src=\"imgs/cornerbox.png\">'
-#_topLeftBox = '&nbsp;'
 
 _useImgHeaders = True
-
-_hideShowSpoilersFromChapNames = False # Doesn't fully work!
-_getSeasonOfChap = False # Doesn't fully work!
 
 _currSeason = 5
 _latestEpisode = 50
@@ -109,55 +105,6 @@ def get_all_chapters_with_pov(pov):
 	chapters = sorted(chapters, key=lambda k: k['totChapNum'])
 	return chapters
 
-
-# Unused, and doesn't work 100% (can enable with _getSeasonOfChap = True)
-# This whole function is probably a bad idea, as this is somewhat subjective and should
-# probably just be manually set like the connections themselves
-# In any case, hiding spoilers by season isn't implemented anyway, so this won't do anything useful
-def get_season_num_for_chapter(chapter, strong_conns_only=False):
-	# Criteria:
-	# 1. If chapter name is empty (e.g. unreleased chapters that show '?'), return 0
-	# 2. If there is a strong connection, use 1st season the connection occurs in
-	# 3. If "occurred" flag isn't set, return 0
-	# 4. If there's a weak connection, return one of those (currently first, but that may need to change)
-	# 5. Find next POV chapter of that character with a strong connection and use that one
-
-	assert g_db is not None
-
-	if is_chap_name_empty(chapter['name']):
-		return 0
-
-	# Make list of all connections that match this chapter
-	conns = [item for item in g_db.connections if item['totChapNum'] == chapter['totChapNum']]
-	conns = sorted(conns, key=lambda k: k['epNum'])
-
-	if strong_conns_only:
-		strongconns = [item for item in conns if item['strength'] > 0]
-
-		if strongconns != []:
-			return get_season_num_for_ep_num(strongconns[0]['epNum'])
-
-	if chapter['occurred'] == '0':
-		return 0
-
-	if not strong_conns_only:
-		if conns != []:
-			return get_season_num_for_ep_num(conns[0]['epNum'])
-
-	# Find next POV chapter of this character and use that chapter's number (recursively)
-	chaps = get_all_chapters_with_pov(chapter['pov'])
-	idx = chaps.index(chapter)
-	if (idx + 1) < len(chaps):
-		nextPovChap = chaps[idx + 1]
-		# TODO: change this to strong_conns_only=True (but make that actually work)
-		return get_season_num_for_chapter(nextPovChap, strong_conns_only=False)
-
-	# No connection was found
-	print('WARNING: Book', chapter['bookNum'], 'Chapter', chapter['name'],
-		  'has no strong connections but has occurred flag set')
-	return 0
-
-
 def print_html_header():
 	global g_opInterVer, g_opPrintVer
 	print("Writing HTML header")
@@ -199,7 +146,7 @@ def print_html_footer():
 	while True:
 		line = g_inFileInter.readline()
 		if not line.endswith('\n'):
-			break;
+			break
 		op(line)
 
 	g_opInterVer = False
@@ -272,7 +219,7 @@ def print_book_title_cells():
 			opl('</th>')
 
 
-def print_chapter_title_cells(chapters):
+def print_chapter_title_cells():
 	assert g_db is not None
 	
 	n = 0
@@ -349,18 +296,7 @@ def print_chapter_title_cells(chapters):
 		else:
 			classes2 = "cni"
 
-			if _getSeasonOfChap:
-				# Get episode number that corresponds to this chapter (used for hiding show spoilers)
-				chapSeason = get_season_num_for_chapter(chap)
-
-				debug_print('Chapter', chap['totChapNum'], 'chapSeason', chapSeason)
-
-				if chapSeason == 0:
-					classes2 += " ho"
-				elif _hideShowSpoilersFromChapNames:
-					classes2 += " seas" + str(chapSeason)
-
-			elif chap.occurred == '0':
+			if chap.occurred == '0':
 				classes2 += " ho"
 
 			opl(_tab + "<th class=\"" + classes + "\" title=\"" + chap.name + "\"><div class=\"cnr\"><div class=\"" + classes2 + "\">" + chapName + "</div></div></th>")
@@ -384,7 +320,6 @@ def print_body_cells(seasEpNum, totEpNum):
 	prevbooknum = -1
 	prevchapnum = -1
 	combined45section = 0
-	totChapNum = 1
 
 	debugprintthisline = (totEpNum == 1)
 
@@ -515,19 +450,8 @@ def print_body_cells(seasEpNum, totEpNum):
 
 			chap = g_db.chapters[totChapNum - 1]
 			povchar = chap.pov.lower()
-			location = chap.location.lower()
 
 			classes = "c pov" + povchar
-
-			if False:
-				# None of these are implemented in html/js/css anyway, so there's no point to doing them
-
-				classes += " loc" + location
-
-				# TODO: multiple storylines
-				storyline = chap['story'][0]
-				if storyline != "":
-					classes += " sto" + storyline
 
 			if conn.strength == 0:
 				classes += " wc"
@@ -680,7 +604,7 @@ def do_printing(db):
 	opl("</tr>")
 	opl("<tr>")
 
-	print_chapter_title_cells(db.chapters)
+	print_chapter_title_cells()
 
 	opl("</tr>")
 	opl("</thead>")

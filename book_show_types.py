@@ -58,15 +58,13 @@ class Book:
 
 
 class Chapter:
-	def __init__(self, number: int, book: Book, number_in_book: int, name: str, pov_char: str, storyline: List[str], location: str, occurred: str):
+	def __init__(self, number: int, book: Book, number_in_book: int, name: str, pov_char: str, occurred: str):
 		"""
 		:param number: chapter number (overall), 1-indexed
 		:param book: reference to book
 		:param number_in_book: number in book, 1-indexed
 		:param name: chapter name
 		:param pov_char: POV character
-		:param storyline:
-		:param location:
 		:param occurred: if chapter has occurred in the show yet
 		"""
 		self.number = number
@@ -74,8 +72,6 @@ class Chapter:
 		self.number_in_book = number_in_book
 		self.name = name
 		self.pov = pov_char
-		self.storyline = storyline
-		self.location = location
 		self.occurred = occurred
 
 	def __str__(self):
