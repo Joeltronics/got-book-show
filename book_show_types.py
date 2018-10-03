@@ -33,16 +33,24 @@ from typing import List
 
 
 class Book:
-	def __init__(self, name: str, num_chapters: int, first_chapter_offset: int):
+	def __init__(self, number: int, name: str, abbreviation: str):
+		"""
+		:param number: 1-indexed
+		:param name: book name
+		:param abbreviation: abbreviation, a.g. "AGoT"
+		"""
+		self.number = number
 		self.name = name
-		self.num_chapters = num_chapters
-		self.first_chapter_offset = first_chapter_offset
+		self.abbreviation = abbreviation
+		self.num_chapters = 0
+		self.first_chapter_offset = 0
 
 	def __str__(self):
 		return self.name
 
 	def __repr__(self):
-		return 'Book(%s, %i chapters, first chapter %i overall)' % (
+		return 'Book(%i: %s, %i chapters, first chapter %i overall)' % (
+			self.number,
 			self.name,
 			self.num_chapters,
 			self.first_chapter_offset
@@ -50,11 +58,20 @@ class Book:
 
 
 class Chapter:
-	def __init__(self, book: str, book_num: int, number: int, tot_chap_num: int, name: str, pov_char: str, storyline: List[str], location: str, occurred: str):
-		self.book = book
-		self.book_num = book_num
+	def __init__(self, number: int, book: Book, number_in_book: int, name: str, pov_char: str, storyline: List[str], location: str, occurred: str):
+		"""
+		:param number: chapter number (overall), 1-indexed
+		:param book: reference to book
+		:param number_in_book: number in book, 1-indexed
+		:param name: chapter name
+		:param pov_char: POV character
+		:param storyline:
+		:param location:
+		:param occurred: if chapter has occurred in the show yet
+		"""
 		self.number = number
-		self.tot_chap_num = tot_chap_num
+		self.book = book
+		self.number_in_book = number_in_book
 		self.name = name
 		self.pov = pov_char
 		self.storyline = storyline
@@ -62,7 +79,7 @@ class Chapter:
 		self.occurred = occurred
 
 	def __str__(self):
-		return '"%s", chapter %i' % (self.name, self.tot_chap_num)
+		return 'Chapter %i: "%s"' % (self.number, self.name)
 
 	def __repr__(self):
 		# TODO: add more details (repr should show all data)
@@ -70,29 +87,40 @@ class Chapter:
 
 
 class Episode:
-	def __init__(self, season: int, name: str):
+	def __init__(self, number: int, season: int, name: str):
+		"""
+		:param number: episode number (overall), 1-indexed
+		:param season: season number, 1-indexed
+		:param name: episode name
+		"""
+		self.number = number
 		self.season = season
 		self.name = name
 
 	def __str__(self):
-		return '"%s", season %i' % (self.name, self.season)
+		return '%i: "%s", season %i' % (self.number, self.name, self.season)
 
 	def __repr__(self):
 		return 'Episode(%s)' % str(self)
 
 
 class Connection:
-	def __init__(self, ep_num: int, book_num: int, chap_name: str, chap_num: int, strength: int, major: bool, notes: str):
-		self.ep_num = ep_num
-		self.book_num = book_num
-		self.chap_name = chap_name
-		self.tot_chap_num = chap_num
+	def __init__(self, episode: Episode, chapter: Chapter, strength: int, major: bool, notes: str):
+		"""
+		:param episode: Reference to episode
+		:param chapter: Reference to chapter
+		:param strength:
+		:param major: Is this a major storyline event?
+		:param notes: Notes to be shown in alt text
+		"""
+		self.episode = episode
+		self.chapter = chapter
 		self.strength = strength
 		self.major = major
 		self.notes = notes
 
 	def __str__(self):
-		return 'Episode %i, Chapter %i' % (self.ep_num, self.tot_chap_num)
+		return 'Episode %i, Chapter %i' % (self.episode.number, self.chapter.number)
 
 	def __repr__(self):
 		# TODO: add more details (repr should show all data)
@@ -111,23 +139,15 @@ class DB:
 		self.connections = []
 
 	def find_chapter(self, chap_name, book_num):
-		chapters = [item for item in self.chapters if (item.book_num == book_num) and (item.name == chap_name)]
+		chapters = [
+			chapter for chapter in self.chapters
+			if (chapter.book.number == book_num) and (chapter.name == chap_name)
+		]
 
 		if len(chapters) == 0:
 			return None
 
 		if len(chapters) > 1:
 			print("WARNING: multiple chapters found matching book #", book_num, "named", chap_name)
-
-		return chapters[0]
-
-	def find_chapter_by_number(self, book_num, chap_num):
-		chapters = [item for item in self.chapters if (item['bookNum'] == book_num) and (item['chapNum'] == chap_num)]
-
-		if len(chapters) == 0:
-			return None
-
-		if len(chapters) > 1:
-			print("WARNING: multiple chapters found matching book #", book_num, " chap#", chap_num, sep="")
 
 		return chapters[0]

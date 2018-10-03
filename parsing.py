@@ -35,6 +35,7 @@ import os.path
 import csv
 
 
+_booksFilename = os.path.join('input', 'books.csv')
 _chapterFilename = os.path.join('input', 'chapters.csv')
 _combinedFilename = os.path.join('input', 'combined.txt')
 _episodeFilename = os.path.join('input', 'episodes.csv')
@@ -43,68 +44,95 @@ _connectionsFilename = os.path.join('input', 'connections.csv')
 _tab = "\t"
 
 
-def parse_chapters():
+def parse_books():
+	print("Processing %s" % _booksFilename)
+	book_list = []
+
+	with open(_booksFilename) as csv_file:
+		reader = csv.reader(csv_file)
+		headers = next(reader)
+
+		n = 1
+		for row in reader:
+
+			# Skip blank rows
+			if not any(row):
+				continue
+
+			book_dict = {header: value for header, value in zip(headers, row)}
+			book_list.append(Book(number=n, **book_dict))
+			n += 1
+
+	return book_list
+
+
+def parse_chapters(book_list):
 	print("Processing", _chapterFilename)
+
 	chapter_list = []
-	book_names = []
-	book_num_chap = []
 	total_chap_num = 0
+
 	with open(_chapterFilename) as csvFile:
-		chapterfile = csv.reader(csvFile)
-		bookname = ""
-		book_num = 0
-		for row in chapterfile:
-			prevbookname = bookname
+		reader = csv.reader(csvFile)
+		next(reader)
+
+		for row in reader:
+			if not any(row):
+				continue
+
 			bookname = row[0]
-			if bookname != "":
-				chapNum = int(row[1])
-				chapName = row[2]
-				povchar = row[3]
-				if povchar == '':
-					# if no POV char given in CSV file, use first word of chapter name
-					povchar = row[2].split()[0]
-					if povchar[0:3].lower() in ["pro", "epi"]:
-						# If it's a prologue/epilogue then always make it "other"
-						povchar = "Other"
-					elif povchar[0:3].lower() == "the":
-						# IF it's a "the" chapter, there should be a pov char set!
-						print("WARNING: no POV char given for chapter " + chapName)
-						povchar = "Other"
-				location = row[4]
-				storyline = [row[5].lower()]
-				if (row[6] != ""):
-					storyline.append(row[6].lower())
-				occurred = row[7]
-				if bookname not in book_names:
-					book_names.append(bookname)
-					book_num += 1
-					book_num_chap.append(1)
-				else:
-					book_num_chap[book_num - 1] += 1
+			chapNum = int(row[1])
+			chapName = row[2]
+			povchar = row[3]
+			if povchar == '':
+				# if no POV char given in CSV file, use first word of chapter name
+				povchar = row[2].split()[0]
+				if povchar[0:3].lower() in ["pro", "epi"]:
+					# If it's a prologue/epilogue then always make it "other"
+					povchar = "Other"
+				elif povchar[0:3].lower() == "the":
+					# IF it's a "the" chapter, there should be a pov char set!
+					print("WARNING: no POV char given for chapter " + chapName)
+					povchar = "Other"
+			location = row[4]
+			storyline = [row[5].lower()]
+			if (row[6] != ""):
+				storyline.append(row[6].lower())
+			occurred = row[7]
 
-				total_chap_num += 1
+			matching_books = [book for book in book_list if book.name == bookname]
 
-				chapter_list.append(Chapter(
-					name=chapName,
-					pov_char=povchar,
-					number=chapNum,
-					book=bookname,
-					book_num=book_num,
-					tot_chap_num=total_chap_num,
-					storyline=storyline,
-					location=location,
-					occurred=occurred,
-				))
+			if not matching_books:
+				raise ValueError('Could not find book matching name "%s"' % bookname)
+			elif len(matching_books) > 1:
+				print('WARNING: found multiple books matching name "%s"' % bookname)
+
+			book = matching_books[0]
+			book.num_chapters += 1
+
+			total_chap_num += 1
+
+			chapter_list.append(Chapter(
+				number=total_chap_num,
+				book=book,
+				number_in_book=chapNum,
+				name=chapName,
+				pov_char=povchar,
+				storyline=storyline,
+				location=location,
+				occurred=occurred,
+			))
 
 	debug_print(repr(chapter_list[0:10]))
 
-	book_chap_offset = cumsum(book_num_chap)
-	#prepend 0 to start
-	book_chap_offset[:0] = [0]
+	book_num_chap = [book.num_chapters for book in book_list]
 
-	book_list = [Book(name, num_chapters, chap_offset) for name, num_chapters, chap_offset in zip(book_names, book_num_chap, book_chap_offset)]
+	book_chap_offset = [0] + cumsum(book_num_chap)
 
-	return chapter_list, book_list
+	for n, book in enumerate(book_list):
+		book.first_chapter_offset = book_chap_offset[n]
+
+	return chapter_list
 
 
 def parse_combined_order(chapters, books):
@@ -146,17 +174,25 @@ def parse_combined_order(chapters, books):
 
 def parse_episodes():
 	print("Processing", _episodeFilename)
-	episodeList = []
+	episode_list = []
 	with open(_episodeFilename) as csvFile:
-		episodeFile = csv.reader(csvFile)
-		for row in episodeFile:
-			season = row[0]
-			if season != "":
-				epname = row[3]
-				epname = epname[1:-1]
-				debug_print(epname)
-				episodeList.append(Episode(season=season, name=epname))
-	return episodeList
+
+		reader = csv.reader(csvFile)
+		next(reader)
+		number = 1
+
+		for row in reader:
+			if not any(row):
+				continue
+
+			season = int(row[0])
+			name = row[3]
+			name = name[1:-1]
+			debug_print(name)
+			episode_list.append(Episode(number=number, season=season, name=name))
+			number += 1
+
+	return episode_list
 
 
 def parse_connections(db):
@@ -166,6 +202,8 @@ def parse_connections(db):
 		connectionfile = csv.reader(csvFile)
 		for row in connectionfile:
 			if row[0].isdigit():
+
+				# FIXME: this assumes 10 episodes per season
 				ep_num = int(row[1]) + 10 * (int(row[0]) - 1)
 				book_num = int(row[2])
 				chap_name = row[3]
@@ -191,15 +229,11 @@ def parse_connections(db):
 					print(_tab, "book ", book_num, " chap_name ", chap_name, sep="")
 					print(_tab, "notes: ", notes, sep="")
 
-				chap_num = int(chapter.number) + 1 + db.books[book_num-1].first_chapter_offset
-
-				debug_print("chap_name: %s, chap_num: %i", (chap_name, chap_num))
+				episode = db.episodes[ep_num - 1]
 
 				connList.append(Connection(
-					ep_num=ep_num,
-					book_num=book_num,
-					chap_name=chap_name,
-					chap_num=chap_num,
+					episode=episode,
+					chapter=chapter,
 					strength=strength,
 					major=major,
 					notes=notes,
@@ -214,7 +248,9 @@ def do_parsing() -> DB:
 
 	db = DB()
 
-	db.chapters, db.books = parse_chapters()
+	db.books = parse_books()
+
+	db.chapters = parse_chapters(db.books)
 
 	print("")
 	print("%i chapters in %i" % (len(db.chapters), len(db.books)))

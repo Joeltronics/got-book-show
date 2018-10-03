@@ -62,9 +62,6 @@ _getSeasonOfChap = False # Doesn't fully work!
 _currSeason = 5
 _latestEpisode = 50
 
-# abbreviated book names
-_bookAbbrevs = ['AGoT','ACoK','ASoS','AFfC','ADwD','TWoW','ADoS']
-
 # If chapter name is longer than this many characters, it will be abbreviated
 # (Based on number of characters the stringLen function below will return, which is approximate)
 _maxChapNameLength = 15
@@ -210,7 +207,7 @@ def print_html_footer():
 	while True:
 		line = g_inFilePrint.readline()
 		if not line.endswith('\n'):
-			break;
+			break
 		op(line)
 
 	g_opInterVer = True
@@ -219,56 +216,60 @@ def print_html_footer():
 
 def print_book_title_cells():
 	assert g_db is not None
-	for n in range(len(g_db.books)):
+
+	for n, book in enumerate(g_db.books):
 
 		# Column that summarizes book (for when column set is collapsed)
-		classes = "booktitle b" + str(n + 1) + "title b" + str(n + 1) + "c"
-		op(_tab + "<th rowspan=\"2\" class=\"" + classes + "\" onclick=\"expandbook(" + str(n + 1) + ")\">")
+		classes = 'booktitle b%ititle b%ic' % (book.number, book.number)
+		op(_tab + '<th rowspan="2" class="%s" onclick="expandbook(%i)">' % (classes, book.number))
 
 		if _useImgHeaders:
-			opl("<img src=\"imgs/b" + str(n + 1) + "coll.png\" alt=\"" + g_db.books[n].name + "\">")
+			opl('<img src="imgs/b%icoll.png" alt="%s">' % (book.number, book.name))
 		else:
-			op("<div class=\"booktitleabbrevrotate\"><div class=\"booktitleabbrevinside\">")
-			op(_bookAbbrevs[n])
-			op("</div></div>")
+			op('<div class="booktitleabbrevrotate"><div class="booktitleabbrevinside">')
+			op(book.abbreviation)
+			op('</div></div>')
 
-		opl("</th>")
+		opl('</th>')
 
-		classes = "booktitle b" + str(n + 1) + "title b" + str(n + 1)
-		op(_tab + "<th colspan=\"" + str(g_db.books[n].num_chapters) + "\" class=\"" + classes + "\" onclick=\"collapsebook(" + str(
-			n + 1) + ")\">")
+		classes = 'booktitle b%ititle b%i' % (book.number, book.number)
+		op(_tab + '<th colspan="%i" class="%s" onclick="collapsebook(%i)">' % (book.num_chapters, classes, book.number))
 
 		if _useImgHeaders:
-			opl("<img src=\"imgs/b" + str(n + 1) + "title.png\" alt=\"" + g_db.books[n].name + "\">")
+			opl('<img src="imgs/b%ititle.png" alt="%s">' % (book.number, book.name))
 		else:
-			op(g_db.books[n].name)
-		opl("</th>")
+			op(book.name)
+		opl('</th>')
 
-		if (n == 4):
+		if n == 4:
 			# Print combined order
 
 			# Use 45 as bookNum for css (as much as I like the series, I hope it never hits 45 books...)
-			classes = "booktitle b45title b45c"
-			op(_tab + "<th rowspan=\"2\" class=\"" + classes + "\" onclick=\"expandbook(45)\">")
+			classes = 'booktitle b45title b45c'
+			op(_tab + '<th rowspan="2" class="%s" onclick="expandbook(45)">' % classes)
 
 			if _useImgHeaders:
-				opl("<img src=\"imgs/b45coll.png\" alt=\"" + g_db.books[3].name + " &amp; " + g_db.books[4].name + " (Chronological)\">")
+				opl('<img src="imgs/b45coll.png" alt="%s &amp; %s (Chronological)">' % (
+					g_db.books[3].name, g_db.books[4].name))
 			else:
-				op("<div class=\"booktitleabbrevrotate\"><div class=\"booktitleabbrevinside\">")
-				op("4+5")
-				op("</div></div>")
+				op('<div class="booktitleabbrevrotate"><div class="booktitleabbrevinside">')
+				op('4+5')
+				op('</div></div>')
 
-			opl("</th>")
+			opl('</th>')
 
-			classes = "booktitle b45title b45"
-			op(_tab + "<th colspan=\"" + str(g_db.books[3].num_chapters + g_db.books[4].num_chapters) + "\" class=\"" + classes + "\" onclick=\"collapsebook(45)\">")
+			classes = 'booktitle b45title b45'
+			op(_tab + '<th colspan="%i" class="%s" onclick="collapsebook(45)">' % (
+				g_db.books[3].num_chapters + g_db.books[4].num_chapters,
+				classes))
 
 			if _useImgHeaders:
-				op("<img src=\"imgs/b45title.png\" alt=\"" + g_db.books[3].name + " &amp; " + g_db.books[4].name + " (Chronological)\">")
+				op('<img src="imgs/b45title.png" alt="%s &amp; %s (Chronological)">' % (
+					g_db.books[3].name, g_db.books[4].name))
 			else:
-				op(g_db.books[3] + " &amp; " + g_db.books[4].name + " (Chronological)")
+				op('%s &amp; %s (Chronological)' % (g_db.books[3].name, g_db.books[4].name))
 
-			opl("</th>")
+			opl('</th>')
 
 
 def print_chapter_title_cells(chapters):
@@ -281,8 +282,8 @@ def print_chapter_title_cells(chapters):
 
 	for chap in g_db.chapters_interleaved:
 
-		bookNum = int(chap.book_num)
-		chapNum = int(chap.number)
+		bookNum = int(chap.book.number)
+		chapNum = int(chap.number_in_book)
 
 		# Determine if chapter is new book
 
@@ -316,11 +317,11 @@ def print_chapter_title_cells(chapters):
 			chapName = abbrevString(chapName, _maxChapNameLength)
 
 		if chapNameIsntReal:
-			classes = "cn b" + str(chap.book_num) + " bb"
+			classes = "cn b" + str(chap.book.number) + " bb"
 
-			if (chap.number == 0):
+			if (chap.number_in_book == 0):
 				classes += " lb"
-			elif (n == g_db.books[int(chap.book_num) - 1].num_chapters - 1):
+			elif (n == g_db.books[int(chap.book.number) - 1].num_chapters - 1):
 				classes += " rb"
 
 		elif combinedsection:
@@ -332,11 +333,11 @@ def print_chapter_title_cells(chapters):
 				classes += " rb"
 
 		else:
-			classes = "cn b" + str(chap.book_num) + " bb"
+			classes = "cn b" + str(chap.book.number) + " bb"
 
-			if (chap.number == 0):
+			if (chap.number_in_book == 0):
 				classes += " lb"
-			elif (n == g_db.books[int(chap.book_num) - 1].num_chapters - 1):
+			elif (n == g_db.books[int(chap.book.number) - 1].num_chapters - 1):
 				classes += " rb"
 
 		if n % _nStripe == 0:
@@ -373,9 +374,9 @@ def print_body_cells(seasEpNum, totEpNum):
 	assert g_db is not None
 
 	# First, make list of all connections that match this episode
-	conns = [item for item in g_db.connections if item.ep_num == totEpNum]
+	conns = [item for item in g_db.connections if item.episode.number == totEpNum]
 
-	connums = [item.tot_chap_num for item in conns]
+	connums = [item.chapter.number for item in conns]
 
 	debug_print("episode ", totEpNum, ", ", len(conns), " connections: ", repr(connums), sep="")
 	debug_print(repr(conns), _eol)
@@ -391,10 +392,10 @@ def print_body_cells(seasEpNum, totEpNum):
 
 		isnewbook = 0
 
-		bookNum = int(chapter.book_num)
-		chapNum = int(chapter.number)
+		bookNum = int(chapter.book.number)
+		chapNum = int(chapter.number_in_book)
 
-		totChapNum = chapter.tot_chap_num
+		totChapNum = chapter.number
 
 		# Determine if chapter is new book
 
@@ -443,9 +444,15 @@ def print_body_cells(seasEpNum, totEpNum):
 
 			# Get all connections matching this episode
 			if not combined45section:
-				epbookconns = [item for item in conns if ((item.ep_num == totEpNum) and (item.book_num == bookNum))]
+				epbookconns = [
+					item for item in conns
+					if ((item.episode.number == totEpNum) and (item.chapter.book.number == bookNum))
+				]
 			else:
-				epbookconns = [item for item in conns if ((item.ep_num == totEpNum) and (item.book_num in [4, 5]))]
+				epbookconns = [
+					item for item in conns
+					if ((item.episode.number == totEpNum) and (item.chapter.book.number in [4, 5]))
+				]
 
 			# Is there a connection? If so, make div inside cell
 			if epbookconns != []:
@@ -504,7 +511,7 @@ def print_body_cells(seasEpNum, totEpNum):
 
 		# Is there a connection? If so, make div inside cell
 		if totChapNum in connums:
-			conn = [item for item in conns if item.tot_chap_num == totChapNum][0]
+			conn = [item for item in conns if item.chapter.number == totChapNum][0]
 
 			chap = g_db.chapters[totChapNum - 1]
 			povchar = chap.pov.lower()
@@ -556,7 +563,7 @@ def print_episode_rows(isBody, isEnd=False):
 		else:
 			stripe = ''
 
-		seasonclass = "seas" + episode.season
+		seasonclass = "seas%i" % episode.season
 
 		seasontitleclass = seasonclass + "title"
 
