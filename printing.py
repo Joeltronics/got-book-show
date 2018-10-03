@@ -53,7 +53,7 @@ _currSeason = 5
 _latestEpisode = 50
 
 # If chapter name is longer than this many characters, it will be abbreviated
-# (Based on number of characters the stringLen function below will return, which is approximate)
+# Based on number of utils.display_string_len_approx() returns
 _maxChapNameLength = 15
 
 # Use 45 as books 4 + 5 combined token
@@ -214,14 +214,12 @@ def print_chapter_title_cells(writer: FileWriter):
 		# For "?" chapters after TWOW preview chaps
 		chap_name_isnt_real = is_chap_name_empty(chap.name)
 
-		chap_name_to_display = chap.name
-
 		# if name longer than ~15 characters, abbreviate
-		if combined_section:
-			# If we're in combined section, prepend book number to chapter
-			chap_name_to_display = abbrevString(chap_name_to_display, _maxChapNameLength, str(book_num))
-		else:
-			chap_name_to_display = abbrevString(chap_name_to_display, _maxChapNameLength)
+		# If we're in combined section, prepend book number to chapter
+		chap_name_to_display = abbrev_string(
+			chap.name,
+			_maxChapNameLength,
+			prefix=str(book_num) if combined_section else None)
 
 		if chap_name_isnt_real:
 			classes = ["cn", "b%i" % chap.book.number, "bb"]
@@ -483,7 +481,7 @@ def print_episode_rows(writer: FileWriter, is_body: bool, is_end=False):
 					opl('<img src="imgs/s%ititle.png" alt="Season %i">' % (episode.season.number, episode.season.number))
 				else:
 					opl('<div class="seasonnamerotate">', indent=2)
-					opl('<div class="seasonnameinside">Season %s</div>' % toRomanNumeral(
+					opl('<div class="seasonnameinside">Season %s</div>' % to_roman_numeral(
 						int(episode.season.number)), indent=3)
 					opl("</div>", indent=2)
 

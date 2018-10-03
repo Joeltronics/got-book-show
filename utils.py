@@ -29,7 +29,7 @@ A note from the author:
 """
 
 import string
-from typing import List, Callable
+from typing import List, Callable, Optional, Union
 
 
 _debug = False
@@ -37,9 +37,7 @@ _debug = False
 
 def set_debug(val=True):
 	global _debug
-
 	print('Setting debug: ' + str(val))
-
 	_debug = val
 
 
@@ -62,34 +60,52 @@ def find_unique(list: List, matching_function: Callable, throw_if_not_found=True
 	:return: the item
 	:raises: ValueError if item is not in list or if multiple matches
 	"""
+
 	vals = [item for item in list if matching_function(item)]
+
 	if len(vals) == 0:
 		if throw_if_not_found:
 			raise ValueError('Failed to find item in list')
 		else:
 			return None
+
 	elif len(vals) > 1:
 		raise ValueError('Multiple matches in list')
+
 	return vals[0]
 
 
-# Not the best way of doing this, but it's only used for season numbers so it probably only ever needs to support 1-10
-def toRomanNumeral(num):
-	romnums = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
-	if (num < 1) or (num > len(romnums)):
-		# Fallback in case the show is more than 10 seasons and I forget to update the code yet
-		print("WARNING: roman numeral out of bounds")
-		return num
-	else:
-		return romnums[num - 1]
+def to_roman_numeral(num: int) -> str:
+	if num < 1:
+		raise ValueError("Can't convert zero or negative to roman numberal!")
+	elif num > 39:
+		raise NotImplementedError('to_roman_numeral not implemented for numbers >= 40')
+
+	tens = num // 10
+	ones = num % 10
+
+	return ''.join(['X'] * tens) + ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'][ones]
 
 
-# Approximation for string length
-# This isn't going to be perfect because that requires not only rendering the text, but doing it
-# in exactly the font (and kerning) the browser will use
-# These method should be close enough
-def stringLen(s):
-	n = 0
+# Inline unit tests
+assert to_roman_numeral(1) == 'I'
+assert to_roman_numeral(9) == 'IX'
+assert to_roman_numeral(10) == 'X'
+assert to_roman_numeral(28) == 'XXVIII'
+assert to_roman_numeral(39) == 'XXXIX'
+
+
+def display_string_len_approx(s: str) -> float:
+	"""Determine approximate display string length
+
+	Not going to be perfect because that requires not only rendering the text, but doing it in exactly the font (and
+	kerning) the browser will use
+
+	:param s: string to measure
+	:return: string length, in typical characters
+	"""
+
+	n = 0.0
 	# Iterate 1 character at a time
 	for c in s:
 		if c in '.\'':
@@ -101,64 +117,76 @@ def stringLen(s):
 		elif c in 'MOQW':
 			n += 1.5
 		elif c in string.ascii_lowercase + string.ascii_uppercase + string.digits + '?':
-			n += 1
+			n += 1.0
 		else:
 			print('WARNING: unknown char ' + c + ' in string ' + s)
-			n += 1
+			n += 1.0
 
 	return n
 
 
-# Prefix is something we want to prepend to string, that will always be prepended in full
-# and won't count toward checking if string is just 'the' or blank
-# (i.e. prepending book abbreviation or number to chapter name)
-def abbrevString(s, nChar, prefix=''):
-	bAddPrefix = (prefix != '')
+def abbrev_string(s: str, num_char: Union[float, int], prefix: Optional[str]=None) -> str:
+	"""Abbreviate string to fit within num_char as best possible, trying not to split words if possible
+	Will add "..." if abbreviated
 
-	if bAddPrefix:
+	:param s: String to be abbreviated
+	:param num_char: Max length (according to display_string_len_approx)
+	:param prefix: Something to prepend to string, that will always be prepended in full (e.g. prepending book
+	abbreviation or number to chapter name)
+
+	:return: abbreviated string
+	"""
+
+	num_char = float(num_char)
+
+	if not prefix:
+		prefix = ''
+
+	if prefix:
 		prefix = prefix + ' '
 		# Make room in character limit for prefix
-		nChar -= stringLen(prefix)
+		num_char -= display_string_len_approx(prefix)
 
 	# Check if we even need to abbreviate at all
-	if stringLen(s) <= nChar:
-		if bAddPrefix:
-			return prefix + s
-		else:
-			return s
+	if display_string_len_approx(s) <= num_char:
+		return prefix + s
 
 	# Once we reach this point, we know we need to abbreviate.
 	# Make room in character limit for however many characters ellipsis will take
-	nChar -= stringLen('...')
+	num_char -= display_string_len_approx('...')
 
 	# Try taking as many whole words as we can fit
 	ss = s.split()
-	nwords = len(ss)
-	outstr = ''
-	for n in range(nwords):
-		if stringLen(' '.join(ss[0:n])) < nChar:
-			outstr = ' '.join(ss[0:n])
+	num_words = len(ss)
+	out_str = ''
+	for n in range(num_words):
+		if display_string_len_approx(' '.join(ss[0:n])) < num_char:
+			out_str = ' '.join(ss[0:n])
 		else:
 			break
 
 	# Now check if this ended up abbreviating to blank or just 'the'
 	# If so, instead take as many characters as possible
-	if (outstr == '') or (outstr.lower() == 'the'):
-		outstr = ''
+	if (out_str == '') or (out_str.lower() == 'the'):
+		out_str = ''
 		for c in s:
-			if stringLen(outstr + c) >= nChar:
+			if display_string_len_approx(out_str + c) >= num_char:
 				break
-			outstr += c
+			out_str += c
 
 	# If it ended on an apostrophe, remove it
-	if outstr[-1:] == '\'':
-		outstr = outstr[:-1]
+	if out_str[-1:] == "'":
+		out_str = out_str[:-1]
 
-	if bAddPrefix:
-		outstr = prefix + outstr
+	out_str = prefix + out_str
 
-	outstr += '...'
+	out_str += '...'
 
-	debug_print("Abbreviating chapter '" + prefix + s + "' as '" + outstr + "'")
+	debug_print("Abbreviating chapter '%s%s' as '%s'" % (prefix, s, out_str))
 
-	return outstr
+	return out_str
+
+
+# Inline unit tests/examples
+assert abbrev_string("The quick brown fox jumped over the lazy dogs", num_char=15) == "The quick brown..."
+assert abbrev_string("antidisestablishmentarianism", num_char=15) == "antidisestablish..."
