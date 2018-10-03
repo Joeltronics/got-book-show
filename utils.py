@@ -52,26 +52,25 @@ def debug_print(*args, **kwargs):
 		print(*args, **kwargs)
 
 
-def find_unique(list: List, matching_function: Callable):
+def find_unique(list: List, matching_function: Callable, throw_if_not_found=True):
 	"""Find an item in a list, according to matching_function
 	Assumes there is a single of the item in the list
 
 	:param list: list to find in
 	:param matching_function:
+	:param throw_if_not_found: if True, will throw if not found; if false, will return None
 	:return: the item
 	:raises: ValueError if item is not in list or if multiple matches
 	"""
 	vals = [item for item in list if matching_function(item)]
 	if len(vals) == 0:
-		raise ValueError('Failed to find item in list')
+		if throw_if_not_found:
+			raise ValueError('Failed to find item in list')
+		else:
+			return None
 	elif len(vals) > 1:
 		raise ValueError('Multiple matches in list')
 	return vals[0]
-
-
-# No point importing numpy for a single function
-def cumsum(x):
-	return [sum(x[:i + 1]) for i in range(len(x))]
 
 
 # Not the best way of doing this, but it's only used for season numbers so it probably only ever needs to support 1-10

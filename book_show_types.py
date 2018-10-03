@@ -29,11 +29,12 @@ A note from the author:
 """
 
 
+from typing import List, Optional
 from utils import find_unique
 
 
 class Book:
-	def __init__(self, number: int, name: str, abbreviation: str):
+	def __init__(self, number: int, name: str, abbreviation: str, chapters: Optional[List]=None):
 		"""
 		:param number: 1-indexed
 		:param name: book name
@@ -42,18 +43,17 @@ class Book:
 		self.number = number
 		self.name = name
 		self.abbreviation = abbreviation
-		self.num_chapters = 0
-		self.first_chapter_offset = 0
+		self.chapters = chapters if chapters is not None else []
 
 	def __str__(self):
 		return self.name
 
 	def __repr__(self):
-		return 'Book(%i: %s, %i chapters, first chapter %i overall)' % (
+		return 'Book(%i: %s ("%s"), %i chapters' % (
 			self.number,
 			self.name,
-			self.num_chapters,
-			self.first_chapter_offset
+			self.abbreviation,
+			len(self.chapters)
 		)
 
 
@@ -82,8 +82,14 @@ class Chapter:
 		return 'Chapter(%s)' % str(self)
 
 
+class Season:
+	def __init__(self, number: int, episodes: Optional[List]=None):
+		self.number = number
+		self.episodes = episodes if episodes is not None else []
+
+
 class Episode:
-	def __init__(self, number: int, season: int, name: str):
+	def __init__(self, number: int, season: Season, name: str):
 		"""
 		:param number: episode number (overall), 1-indexed
 		:param season: season number, 1-indexed
@@ -129,8 +135,8 @@ class DB:
 		self.chapters = []
 		self.chapters_interleaved = []
 
+		self.seasons = []
 		self.episodes = []
-		self.num_seasons = 0
 
 		self.connections = []
 

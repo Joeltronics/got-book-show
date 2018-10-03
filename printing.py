@@ -176,7 +176,7 @@ def print_book_title_cells():
 		opl('</th>')
 
 		classes = 'booktitle b%ititle b%i' % (book.number, book.number)
-		op(_tab + '<th colspan="%i" class="%s" onclick="collapsebook(%i)">' % (book.num_chapters, classes, book.number))
+		op(_tab + '<th colspan="%i" class="%s" onclick="collapsebook(%i)">' % (len(book.chapters), classes, book.number))
 
 		if _useImgHeaders:
 			opl('<img src="imgs/b%ititle.png" alt="%s">' % (book.number, book.name))
@@ -203,7 +203,7 @@ def print_book_title_cells():
 
 			classes = 'booktitle b45title b45'
 			op(_tab + '<th colspan="%i" class="%s" onclick="collapsebook(45)">' % (
-				g_db.books[3].num_chapters + g_db.books[4].num_chapters,
+				len(g_db.books[3].chapters) + len(g_db.books[4].chapters),
 				classes))
 
 			if _useImgHeaders:
@@ -262,25 +262,25 @@ def print_chapter_title_cells():
 		if chapNameIsntReal:
 			classes = "cn b" + str(chap.book.number) + " bb"
 
-			if (chap.number_in_book == 0):
+			if chap.number_in_book == 0:
 				classes += " lb"
-			elif (n == g_db.books[int(chap.book.number) - 1].num_chapters - 1):
+			elif n == len(chap.book.chapters) - 1:
 				classes += " rb"
 
 		elif combinedsection:
 			classes = "cn b45 b" + str(bookNum) + "co bb"
 
-			if (n == 0):
+			if n == 0:
 				classes += " lb"
-			elif (chapNum == (g_db.books[4].num_chapters - 1)):
+			elif chapNum == (len(g_db.books[4].chapters) - 1):
 				classes += " rb"
 
 		else:
 			classes = "cn b" + str(chap.book.number) + " bb"
 
-			if (chap.number_in_book == 0):
+			if chap.number_in_book == 0:
 				classes += " lb"
-			elif (n == g_db.books[int(chap.book.number) - 1].num_chapters - 1):
+			elif n == len(chap.book.chapters) - 1:
 				classes += " rb"
 
 		if n % _nStripe == 0:
@@ -419,14 +419,14 @@ def print_body_cells(seasEpNum, totEpNum):
 			classes += " bb"
 
 		if not combined45section:
-			if (chapNum == 0):
+			if chapNum == 0:
 				classes += "  lb"
-			if (chapNum == g_db.books[bookNum - 1].num_chapters - 1):
+			if chapNum == len(chapter.book.chapters) - 1:
 				classes += " rb"
 		else:
-			if (bookNum == 4 and chapNum == 0):
+			if bookNum == 4 and chapNum == 0:
 				classes += " lb"
-			if (bookNum == 5 and chapNum == (g_db.books[4].num_chapters - 1)):
+			if bookNum == 5 and chapNum == (len(g_db.books[4].chapters) - 1):
 				classes += " rb"
 
 		if (n % _nStripe == 0) or ((seasEpNum - 1) % _nStripe == 0):
@@ -456,9 +456,9 @@ def print_body_cells(seasEpNum, totEpNum):
 
 			title = re.sub('"', '&quot;', conn.notes)
 
-			op("<div class=\"" + classes + "\" title=\"" + title + "\"></div>")
+			op('<div class="%s" title="%s"></div>' % (classes, title))
 
-		op("</td>")
+		op('</td>')
 		n += 1
 
 
@@ -467,7 +467,7 @@ def print_body_cells(seasEpNum, totEpNum):
 def print_episode_rows(isBody, isEnd=False):
 	assert g_db is not None
 
-	prevseason = ''
+	prevseason = None
 	seasEpNum = 0
 	totEpNum = 0
 
@@ -483,22 +483,22 @@ def print_episode_rows(isBody, isEnd=False):
 		else:
 			stripe = ''
 
-		seasonclass = "seas%i" % episode.season
+		seasonclass = "seas%i" % episode.season.number
 
 		seasontitleclass = seasonclass + "title"
 
-		if int(episode.season) == _currSeason:
+		if episode.season.number == _currSeason:
 			if totEpNum <= _latestEpisode:
 				seasonclass += "aired"
 			else:
 				seasonclass += "unaired"
 
 		if episode.season != prevseason:
-			opl("<tr class=\"eprow epkeyrow " + seasonclass + "\">")
+			opl('<tr class="eprow epkeyrow %s">' % seasonclass)
 			prevseason = episode.season
 			seasEpNum = 1
 		else:
-			opl("<tr class=\"eprow " + seasonclass + "\">")
+			opl('<tr class="eprow %s">' % seasonclass)
 			seasEpNum += 1
 
 		classes = stripe
@@ -508,29 +508,29 @@ def print_episode_rows(isBody, isEnd=False):
 			classes += " bb"
 
 		if isEnd:
-			op(_tab + "<th class=\"eptitle lb" + classes + hideOnFloat + "\">")
-			op("<div class=\"eptitleinside\">")
+			op(_tab + '<th class="eptitle lb%s%s">' % (classes, hideOnFloat))
+			op('<div class="eptitleinside">')
 			opl(episode.name + "</div></th>")
-			opl(_tab + "<th class=\"epnum" + classes + hideOnFloat + " rb\">" + str(seasEpNum) + "</th>")
+			opl(_tab + '<th class="epnum%s%s rb">%i</th>' % (classes, hideOnFloat, seasEpNum))
 
 		if seasEpNum == 1:
-			opl(_tab + "<th rowspan=\"10\" class=\"seasontitle " + seasontitleclass + hideOnFloat + "\">")
+			opl(_tab + '<th rowspan="10" class="seasontitle %s%s">' % (seasontitleclass, hideOnFloat))
 
 			if _useImgHeaders:
-				opl("<img src=\"imgs/s" + str(episode.season) + "title.png\" alt=\"Season " + str(
-					episode.season) + "\">")
+				opl('<img src="imgs/s%ititle.png" alt="Season %i">' % (episode.season.number, episode.season.number))
 			else:
-				opl(_tab + _tab + "<div class=\"seasonnamerotate\">")
-				opl(_tab + _tab + _tab + "<div class=\"seasonnameinside\">Season " + toRomanNumeral(
-					int(episode.season)) + "</div>")
+				opl(_tab + _tab + '<div class="seasonnamerotate">')
+				opl(_tab + _tab + _tab + '<div class="seasonnameinside">Season %s</div>' % toRomanNumeral(
+					int(episode.season.number)))
 				opl(_tab + _tab + "</div>")
 
 			opl(_tab + "</th>")
 
 		if not isEnd:
-			opl(_tab + "<th class=\"epnum" + classes + hideOnFloat + "\">" + str(seasEpNum) + "</th>")
-			op(_tab + "<th class=\"eptitle rb" + classes + hideOnFloat + "\">")
-			op("<div class=\"eptitleinside\">")
+			opl(_tab + '<th class="epnum%s%s">%i</th>' % (
+				classes, hideOnFloat, seasEpNum))
+			op(_tab + '<th class="eptitle rb%s%s">' % (classes, hideOnFloat))
+			op('<div class="eptitleinside">')
 			opl(episode.name + "</div></th>")
 
 		if isBody:

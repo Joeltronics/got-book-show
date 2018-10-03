@@ -88,27 +88,22 @@ def parse_chapters(filename, book_list):
 			occurred = bool(int(row[7]))
 
 			book = find_unique(book_list, lambda book: book.name == bookname)
-			book.num_chapters += 1
 
 			total_chap_num += 1
 
-			chapter_list.append(Chapter(
+			chapter = Chapter(
 				number=total_chap_num,
 				book=book,
 				number_in_book=chapNum,
 				name=chapName,
 				pov_char=povchar,
 				occurred=occurred,
-			))
+			)
+
+			chapter_list.append(chapter)
+			book.chapters.append(chapter)
 
 	debug_print(repr(chapter_list[0:10]))
-
-	book_num_chap = [book.num_chapters for book in book_list]
-
-	book_chap_offset = [0] + cumsum(book_num_chap)
-
-	for n, book in enumerate(book_list):
-		book.first_chapter_offset = book_chap_offset[n]
 
 	return chapter_list
 
@@ -122,8 +117,6 @@ def parse_combined_order(filename, chapters, books):
 
 			words = line.split()
 			words = [word.lower() for word in words]
-
-			book_num = 0
 
 			if 'affc' in words:
 				book_num = 4
@@ -140,7 +133,7 @@ def parse_combined_order(filename, chapters, books):
 			# combined.txt 1-indexes chapters
 			chapNum = int(words[n + 1]) - 1
 
-			chapter = chapters[chapNum + books[book_num - 1].first_chapter_offset]
+			chapter = chapters[chapNum + books[book_num - 1].chapters[0].number - 1]
 			combined_chapter_list.append(chapter)
 
 			debug_print(chapter)
@@ -152,25 +145,38 @@ def parse_combined_order(filename, chapters, books):
 
 def parse_episodes(filename):
 	print("Processing %s" % filename)
+
 	episode_list = []
+	season_list = []
+
 	with open(filename) as csvFile:
 
 		reader = csv.reader(csvFile)
 		next(reader)
-		number = 1
+		number = 0
 
 		for row in reader:
 			if not any(row):
 				continue
 
-			season = int(row[0])
+			season_num = int(row[0])
 			name = row[3]
 			name = name[1:-1]
 			debug_print(name)
-			episode_list.append(Episode(number=number, season=season, name=name))
-			number += 1
 
-	return episode_list
+			season = find_unique(season_list, lambda season: season.number == season_num, throw_if_not_found=False)
+			if season is None:
+				debug_print('Adding season %i' % season_num)
+				season = Season(number=season_num)
+				season_list.append(season)
+
+			number += 1
+			episode = Episode(number=number, season=season, name=name)
+
+			episode_list.append(episode)
+			season.episodes.append(episode)
+
+	return episode_list, season_list
 
 
 def parse_connections(filename, db):
@@ -248,16 +254,18 @@ def do_parsing(dir='input') -> DB:
 
 	# Have to use list(), otherwise it just copies reference and that's bad
 	db.chapters_interleaved = list(db.chapters)
-	# Insert combined chapter list into g_chapter_list
-	db.chapters_interleaved[db.books[5].first_chapter_offset:db.books[5].first_chapter_offset] = combined_chapter_list
+
+	# Insert combined chapter list into chapter list
+	insertion_point = db.books[5].chapters[0].number - 1
+	db.chapters_interleaved[insertion_point:insertion_point] = combined_chapter_list
 
 	for chapter in db.chapters_interleaved:
 		debug_print(repr(chapter))
 
 	print("")
 
-	db.episodes = parse_episodes(episode_filename)
-	print("%i episodes" % len(db.episodes))
+	db.episodes, db.seasons = parse_episodes(episode_filename)
+	print("%i episodes, %i seasons" % (len(db.episodes), len(db.seasons)))
 
 	print("")
 
