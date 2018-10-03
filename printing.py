@@ -34,12 +34,6 @@ import os.path
 import re
 
 
-_htmlTemplateFilenameInter = os.path.join('input', 'template.html')
-_htmlTemplateFilenamePrint = os.path.join('input', 'template-print.html')
-_outputFilenameInter = os.path.join('output', 'bookshow.html')
-_outputFilenamePrint = os.path.join('output-print', 'bookshow_print.html')
-
-
 # Darken every n cells
 _nStripe = 5
 
@@ -51,7 +45,7 @@ _tab="\t"
 # Windows EOL (\r\n)
 _eol="\r\n"
 
-_topLeftBox = '<img src=\"imgs/cornerbox.png\">'
+_topLeftBox = '<img src="imgs/cornerbox.png">'
 
 _useImgHeaders = True
 
@@ -62,36 +56,34 @@ _latestEpisode = 50
 # (Based on number of characters the stringLen function below will return, which is approximate)
 _maxChapNameLength = 15
 
+# Use 45 as books 4 + 5 combined token
+# As long as there's never a Discworld show, this should be fine
+# Must match CSS & Javascript!
+_combined_book_token = 45
+
 
 # Globals
+
 g_db = None
 
 
-# macro to output a line
-def opl(line):
-	# global vars g_opInterVer and g_opPrintVer are switches to turning printing to interactive version and print version on or off
-	global g_opPrintVer, g_opInterVer
-	global g_outFileInter, g_outFilePrint, _eol
+class FileWriter:
+	def __init__(self, *files):
+		self.files = files
 
-	if g_opInterVer:
-		g_outFileInter.write(line + _eol)
-	if g_opPrintVer:
-		g_outFilePrint.write(line + _eol)
+	def op(self, text, indent=0):
+		for file in self.files:
+			indentation = ''.join([_tab] * indent)
+			file.write(indentation + text)
 
 
-# output, without eol
-def op(line):
-	global g_opPrintVer, g_opInterVer
-	global g_outFileInter, g_outFilePrint, _eol
-	if g_opInterVer:
-		g_outFileInter.write(line)
-	if g_opPrintVer:
-		g_outFilePrint.write(line)
+	def opl(self, text, indent=0):
+		self.op(text + _eol, indent=indent)
 
 
 def is_chap_name_empty(chap_name):
 	x = ''.join(ch for ch in chap_name if ch.isalnum())
-	return (x == '')
+	return x == ''
 
 
 def get_all_chapters_with_pov(pov):
@@ -101,70 +93,66 @@ def get_all_chapters_with_pov(pov):
 	return chapters
 
 
-def print_html_header():
-	global g_opInterVer, g_opPrintVer
-	print("Writing HTML header")
-
-	g_opInterVer = True
-	g_opPrintVer = False
+def print_html_header(writer: FileWriter, in_file):
 	line = ''
 	while _tableLine not in line:
-		line = g_inFileInter.readline()
+		line = in_file.readline()
 
 		if not line.endswith('\n'):
-			print("ERROR: line", _tableLine, "not found!")
-			exit()
+			raise ValueError('Error: line %s not found' % _tableLine)
 
-		op(line)
-
-	g_opInterVer = False
-	g_opPrintVer = True
-	line = ''
-	while _tableLine not in line:
-		line = g_inFilePrint.readline()
-
-		if not line.endswith('\n'):
-			print("ERROR: line", _tableLine, "not found!")
-			exit()
-
-		op(line)
-
-	g_opInterVer = True
-	g_opPrintVer = True
+		writer.op(line)
 
 
-def print_html_footer():
-	global g_opInterVer, g_opPrintVer
-	print("Writing HTML footer")
-
-	g_opInterVer = True
-	g_opPrintVer = False
+def print_html_footer(writer: FileWriter, in_file):
 	while True:
-		line = g_inFileInter.readline()
+		line = in_file.readline()
 		if not line.endswith('\n'):
 			break
-		op(line)
-
-	g_opInterVer = False
-	g_opPrintVer = True
-	while True:
-		line = g_inFilePrint.readline()
-		if not line.endswith('\n'):
-			break
-		op(line)
-
-	g_opInterVer = True
-	g_opPrintVer = True
+		writer.op(line)
 
 
-def print_book_title_cells():
+def print_combined_title_cells(writer: FileWriter, book1, book2, book_token=_combined_book_token):
+	op = writer.op
+	opl = writer.opl
+
+	classes = 'booktitle b%ititle b%ic' % (book_token, book_token)
+	op('<th rowspan="2" class="%s" onclick="expandbook(%i)">' % (classes, book_token), indent=1)
+
+	if _useImgHeaders:
+		opl('<img src="imgs/b%icoll.png" alt="%s &amp; %s (Chronological)">' % (
+			book_token, book1.name, book2.name))
+	else:
+		op('<div class="booktitleabbrevrotate"><div class="booktitleabbrevinside">')
+		op('%i+%i' % (book1.number, book2.number))
+		op('</div></div>')
+
+	opl('</th>')
+
+	classes = 'booktitle b%ititle b%i' % (book_token, book_token)
+	op('<th colspan="%i" class="%s" onclick="collapsebook(%i)">' % (
+		len(book1.chapters) + len(book2.chapters), classes, book_token), indent=1)
+
+	if _useImgHeaders:
+		op('<img src="imgs/b%ititle.png" alt="%s &amp; %s (Chronological)">' % (
+			book_token, book1.name, book2.name))
+	else:
+		op('%s &amp; %s (Chronological)' % (book1.name, book2.name))
+
+	opl('</th>')
+
+
+def print_book_title_cells(writer: FileWriter):
 	assert g_db is not None
+
+	op = writer.op
+	opl = writer.opl
 
 	for n, book in enumerate(g_db.books):
 
 		# Column that summarizes book (for when column set is collapsed)
 		classes = 'booktitle b%ititle b%ic' % (book.number, book.number)
-		op(_tab + '<th rowspan="2" class="%s" onclick="expandbook(%i)">' % (classes, book.number))
+		op('<th rowspan="2" class="%s" onclick="expandbook(%i)">' % (classes, book.number), indent=1)
 
 		if _useImgHeaders:
 			opl('<img src="imgs/b%icoll.png" alt="%s">' % (book.number, book.name))
@@ -176,7 +164,7 @@ def print_book_title_cells():
 		opl('</th>')
 
 		classes = 'booktitle b%ititle b%i' % (book.number, book.number)
-		op(_tab + '<th colspan="%i" class="%s" onclick="collapsebook(%i)">' % (len(book.chapters), classes, book.number))
+		op('<th colspan="%i" class="%s" onclick="collapsebook(%i)">' % (len(book.chapters), classes, book.number), indent=1)
 
 		if _useImgHeaders:
 			opl('<img src="imgs/b%ititle.png" alt="%s">' % (book.number, book.name))
@@ -185,109 +173,85 @@ def print_book_title_cells():
 		opl('</th>')
 
 		if n == 4:
-			# Print combined order
-
-			# Use 45 as bookNum for css (as much as I like the series, I hope it never hits 45 books...)
-			classes = 'booktitle b45title b45c'
-			op(_tab + '<th rowspan="2" class="%s" onclick="expandbook(45)">' % classes)
-
-			if _useImgHeaders:
-				opl('<img src="imgs/b45coll.png" alt="%s &amp; %s (Chronological)">' % (
-					g_db.books[3].name, g_db.books[4].name))
-			else:
-				op('<div class="booktitleabbrevrotate"><div class="booktitleabbrevinside">')
-				op('4+5')
-				op('</div></div>')
-
-			opl('</th>')
-
-			classes = 'booktitle b45title b45'
-			op(_tab + '<th colspan="%i" class="%s" onclick="collapsebook(45)">' % (
-				len(g_db.books[3].chapters) + len(g_db.books[4].chapters),
-				classes))
-
-			if _useImgHeaders:
-				op('<img src="imgs/b45title.png" alt="%s &amp; %s (Chronological)">' % (
-					g_db.books[3].name, g_db.books[4].name))
-			else:
-				op('%s &amp; %s (Chronological)' % (g_db.books[3].name, g_db.books[4].name))
-
-			opl('</th>')
+			print_combined_title_cells(writer, g_db.books[3], g_db.books[4])
 
 
-def print_chapter_title_cells():
+def print_chapter_title_cells(writer: FileWriter):
 	assert g_db is not None
+
+	op = writer.op
+	opl = writer.opl
 	
 	n = 0
-	combinedsection = 0
-	prevchapbooknum = -1
-	prevchapnum = -1
+	combined_section = False
+	prev_chap_book_num = -1
+	prev_chap_num = -1
 
 	for chap in g_db.chapters_interleaved:
 
-		bookNum = int(chap.book.number)
-		chapNum = int(chap.number_in_book)
+		book_num = int(chap.book.number)
+		chap_num = int(chap.number_in_book)
 
 		# Determine if chapter is new book
 
 		# if gone down in book number or chapter number
-		if (bookNum <= prevchapbooknum):
-			if (chapNum <= prevchapnum):
-				if not combinedsection:
+		if book_num <= prev_chap_book_num:
+			if chap_num <= prev_chap_num:
+				if not combined_section:
 					n = 0
-				combinedsection = 1
+				combined_section = True
 
-				debug_print("bookNum=", bookNum, " chapNum=", chapNum, sep="")
+				debug_print("book_num=%i, chap_num=%i" % (book_num, chap_num))
 
-		elif bookNum == 6:
-			combinedsection = 0
+		elif book_num == 6:
+			combined_section = False
 
-		if (bookNum != prevchapbooknum and not combinedsection):
-			debug_print("bookNum=", bookNum, " prevchapbooknum=", prevchapbooknum, " combinedsection=", combinedsection,
-						sep="")
+		if book_num != prev_chap_book_num and not combined_section:
+			debug_print("book_num=%i, prev_chap_book_num=%i, combined_section=%s" % (
+				book_num, prev_chap_book_num, str(combined_section)))
 			n = 0
 
-		chapName = chap.name
-
 		# For "?" chapters after TWOW preview chaps
-		chapNameIsntReal = is_chap_name_empty(chapName)
+		chap_name_isnt_real = is_chap_name_empty(chap.name)
+
+		chap_name_to_display = chap.name
 
 		# if name longer than ~15 characters, abbreviate
-		if combinedsection:
+		if combined_section:
 			# If we're in combined section, prepend book number to chapter
-			chapName = abbrevString(chapName, _maxChapNameLength, str(bookNum))
+			chap_name_to_display = abbrevString(chap_name_to_display, _maxChapNameLength, str(book_num))
 		else:
-			chapName = abbrevString(chapName, _maxChapNameLength)
+			chap_name_to_display = abbrevString(chap_name_to_display, _maxChapNameLength)
 
-		if chapNameIsntReal:
-			classes = "cn b" + str(chap.book.number) + " bb"
+		if chap_name_isnt_real:
+			classes = ["cn", "b%i" % chap.book.number, "bb"]
 
 			if chap.number_in_book == 0:
-				classes += " lb"
+				classes.append("lb")
 			elif n == len(chap.book.chapters) - 1:
-				classes += " rb"
+				classes.append("rb")
 
-		elif combinedsection:
-			classes = "cn b45 b" + str(bookNum) + "co bb"
+		elif combined_section:
+			classes = ["cn", "b%i" % _combined_book_token, "b%ico" % book_num, "bb"]
 
 			if n == 0:
-				classes += " lb"
-			elif chapNum == (len(g_db.books[4].chapters) - 1):
-				classes += " rb"
+				classes.append("lb")
+			elif chap_num == (len(g_db.books[4].chapters) - 1):
+				classes.append("rb")
 
 		else:
-			classes = "cn b" + str(chap.book.number) + " bb"
+			classes = ["cn", "b%i" % chap.book.number, "bb"]
 
 			if chap.number_in_book == 0:
-				classes += " lb"
+				classes.append("lb")
 			elif n == len(chap.book.chapters) - 1:
-				classes += " rb"
+				classes.append("rb")
 
 		if n % _nStripe == 0:
-			classes += " s"
+			classes.append("s")
 
-		if chapNameIsntReal:
-			opl(_tab + "<th class=\"" + classes + "\"><div class=\"cni nonrotate\">?</div></th>")
+		if chap_name_isnt_real:
+			opl('<th class="%s"><div class="cni nonrotate">?</div></th>' % (' '.join(classes)), indent=1)
 
 		else:
 			classes2 = "cni"
@@ -295,362 +259,363 @@ def print_chapter_title_cells():
 			if not chap.occurred:
 				classes2 += " ho"
 
-			opl(_tab + "<th class=\"" + classes + "\" title=\"" + chap.name + "\"><div class=\"cnr\"><div class=\"" + classes2 + "\">" + chapName + "</div></div></th>")
+			opl('<th class="%s" title="%s"><div class="cnr"><div class="%s">%s</div></div></th>' % (
+				' '.join(classes), chap.name, classes2, chap_name_to_display), indent=1)
 		n += 1
 
-		prevchapbooknum = bookNum
-		prevchapnum = chapNum
+		prev_chap_book_num = book_num
+		prev_chap_num = chap_num
 
 
-def print_body_cells(seasEpNum, totEpNum):
+def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_line=False):
 	assert g_db is not None
 
+	op = writer.op
+	opl = writer.opl
+
 	# First, make list of all connections that match this episode
-	conns = [item for item in g_db.connections if item.episode.number == totEpNum]
+	connections = [item for item in g_db.connections if item.episode == episode]
 
-	connums = [item.chapter.number for item in conns]
+	connection_chapter_nums = [item.chapter.number for item in connections]
 
-	debug_print("episode ", totEpNum, ", ", len(conns), " connections: ", repr(connums), sep="")
-	debug_print(repr(conns), _eol)
+	debug_print("episode %i, %i connections: %s" % (episode.number, len(connections), repr(connection_chapter_nums)))
+	debug_print(repr(connections) + _eol)
 
-	prevbooknum = -1
-	prevchapnum = -1
-	combined45section = 0
-
-	debugprintthisline = (totEpNum == 1)
-
+	prev_book_num = None
+	prev_chap_num = None
+	combined_section = False
+	stripe_counter = None
 	for chapter in g_db.chapters_interleaved:
 
-		isnewbook = 0
+		is_new_book = False
 
-		bookNum = int(chapter.book.number)
-		chapNum = int(chapter.number_in_book)
+		book_num = int(chapter.book.number)
+		chap_num = int(chapter.number_in_book)
 
-		totChapNum = chapter.number
+		tot_chap_num = chapter.number
 
 		# Determine if chapter is new book
 
 		# if gone down in both book number and chapter number, we're in 4+5 combined section
-		if (bookNum <= prevbooknum):
-			if (chapNum <= prevchapnum):
-				if not combined45section:
-					isnewbook = 1
-				combined45section = 1
-		elif bookNum == 6:
-			combined45section = 0
+		if prev_book_num is not None and book_num <= prev_book_num:
+			if prev_chap_num is not None and chap_num <= prev_chap_num:
+				if not combined_section:
+					is_new_book = True
+				combined_section = True
 
-		if ((bookNum != prevbooknum) and not combined45section):
-			isnewbook = 1
+		elif book_num == 6:
+			combined_section = False
 
-		if debugprintthisline:
-			if isnewbook:
-				if not combined45section:
+		if book_num != prev_book_num and not combined_section:
+			is_new_book = True
+
+		if debug_print_this_line:
+			if is_new_book:
+				if not combined_section:
 					debug_print('')
-					debug_print('Book', bookNum, 'start')
+					debug_print('Book', book_num, 'start')
 				else:
 					debug_print('')
 					debug_print('Book 4+5 combined start')
 
-		prevbooknum = bookNum
-		prevchapnum = chapNum
+		prev_book_num = book_num
+		prev_chap_num = chap_num
 
-		if isnewbook:
-			n = 0
+		if is_new_book:
+			stripe_counter = 0
 
 			# Add book summary cell
 
-			if not combined45section:
-				classes = "b" + str(bookNum) + "c lb rb"
+			if not combined_section:
+				classes = ["b%ic" % book_num, "lb", "rb"]
 			else:
-				classes = "b45c lb rb"
+				classes = ["b%ic" % _combined_book_token, "lb", "rb"]
 
-			if seasEpNum == 1:
-				classes += " tb"
-			elif (seasEpNum == 10):
-				classes += " bb"
-			if (seasEpNum - 1) % _nStripe == 0:
-				classes += " s"
+			if seas_ep_num == 1:
+				classes.append("tb")
+			elif seas_ep_num == len(episode.season.episodes):
+				classes.append("bb")
 
-			op(_tab + "<td class=\"" + classes + "\">")
+			if (seas_ep_num - 1) % _nStripe == 0:
+				classes.append("s")
+
+			op('<td class="%s">' % ' '.join(classes), indent=1)
 
 			# Get all connections matching this episode
-			if not combined45section:
-				epbookconns = [
-					item for item in conns
-					if ((item.episode.number == totEpNum) and (item.chapter.book.number == bookNum))
+			if not combined_section:
+				ep_book_connections = [
+					item for item in connections
+					if (item.episode.number == episode.number) and (item.chapter.book.number == book_num)
 				]
 			else:
-				epbookconns = [
-					item for item in conns
-					if ((item.episode.number == totEpNum) and (item.chapter.book.number in [4, 5]))
+				ep_book_connections = [
+					item for item in connections
+					if (item.episode.number == episode.number) and (item.chapter.book.number in [4, 5])
 				]
 
 			# Is there a connection? If so, make div inside cell
-			if epbookconns != []:
+			if ep_book_connections:
 
-				classes = "c"
+				classes = ["c"]
 
 				# Now figure out if there are strong connections or only weak
-
-				strongepbookconns = [item for item in epbookconns if item.strength == 1]
-
-				if strongepbookconns == []:
-					classes += " wc"
+				if any([item for item in ep_book_connections if item.strength == 1]):
+					classes.append("sc")
 				else:
-					classes += " sc"
+					classes.append("wc")
 
-				op("<div class=\"" + classes + "\"></div>")
+				op('<div class="%s"></div>' % ' '.join(classes))
 
 			opl("</td>")
 
 		# Print cell
 
-		if debugprintthisline:
-			debug_print("Book", bookNum, "Chapter", chapNum)
+		if debug_print_this_line:
+			debug_print("Book %i, Chapter %i" % (book_num, chap_num))
 
-		if not combined45section:
-			classes = "b" + str(bookNum)
+		if not combined_section:
+			classes = ["b%i" % book_num]
 		else:
-			classes = "b45 b" + str(bookNum) + "co"
+			classes = ["b%i" % _combined_book_token, "b%ico" % book_num]
 
-		if (seasEpNum == 1):
-			classes += " tb"
-		if (seasEpNum == 10):
-			classes += " bb"
+		if seas_ep_num == 1:
+			classes.append("tb")
+		if seas_ep_num == len(episode.season.episodes):
+			classes.append("bb")
 
-		if not combined45section:
-			if chapNum == 0:
-				classes += "  lb"
-			if chapNum == len(chapter.book.chapters) - 1:
-				classes += " rb"
+		if not combined_section:
+			if chap_num == 0:
+				classes.append("lb")
+			if chap_num == len(chapter.book.chapters) - 1:
+				classes.append("rb")
 		else:
-			if bookNum == 4 and chapNum == 0:
-				classes += " lb"
-			if bookNum == 5 and chapNum == (len(g_db.books[4].chapters) - 1):
-				classes += " rb"
+			# First chapter of book 4 is first chapter of combined section
+			# Last chapter of book 5 is last chapter
+			if book_num == 4 and chap_num == 0:
+				classes.append("lb")
+			if book_num == 5 and chap_num == (len(g_db.books[4].chapters) - 1):
+				classes.append("rb")
 
-		if (n % _nStripe == 0) or ((seasEpNum - 1) % _nStripe == 0):
-			classes += " s"
+		if (stripe_counter % _nStripe == 0) or ((seas_ep_num - 1) % _nStripe == 0):
+			classes.append("s")
 
-		if debugprintthisline:
+		if debug_print_this_line:
 			if 'lb' in classes:
 				debug_print('left border')
 			if 'rb' in classes:
 				debug_print('right border')
 
-		op("<td class=\"" + classes + "\">")
+		op('<td class="%s">' % ' '.join(classes))
 
 		# Is there a connection? If so, make div inside cell
-		if totChapNum in connums:
-			conn = [item for item in conns if item.chapter.number == totChapNum][0]
+		if tot_chap_num in connection_chapter_nums:
+			conn = [item for item in connections if item.chapter.number == tot_chap_num][0]
 
-			chap = g_db.chapters[totChapNum - 1]
+			chap = g_db.chapters[tot_chap_num - 1]
 			povchar = chap.pov.lower()
 
-			classes = "c pov" + povchar
+			classes = ["c", "pov%s" % povchar]
 
 			if conn.strength == 0:
-				classes += " wc"
+				classes.append("wc")
 			else:
-				classes += " sc"
+				classes.append("sc")
 
 			title = re.sub('"', '&quot;', conn.notes)
 
-			op('<div class="%s" title="%s"></div>' % (classes, title))
+			op('<div class="%s" title="%s"></div>' % (' '.join(classes), title))
 
 		op('</td>')
-		n += 1
+		stripe_counter += 1
 
 
 # isBody indicates if this is the one that goes inside the main table
 # isEnd indicates if this is the one that goes at the very end (for print version)
-def print_episode_rows(isBody, isEnd=False):
+def print_episode_rows(writer: FileWriter, is_body: bool, is_end=False):
 	assert g_db is not None
 
-	prevseason = None
-	seasEpNum = 0
-	totEpNum = 0
+	op = writer.op
+	opl = writer.opl
 
-	hideOnFloat = ''
-	if isBody:
-		hideOnFloat = ' hideonfloat'
-	for episode in g_db.episodes:
+	hide_on_float = ' hideonfloat' if is_body else ''
 
-		totEpNum += 1
+	for season in g_db.seasons:
+		for seas_ep_idx, episode in enumerate(season.episodes):
 
-		if (seasEpNum % _nStripe == 0):
-			stripe = ' s'
-		else:
-			stripe = ''
+			seas_ep_num = seas_ep_idx + 1
 
-		seasonclass = "seas%i" % episode.season.number
-
-		seasontitleclass = seasonclass + "title"
-
-		if episode.season.number == _currSeason:
-			if totEpNum <= _latestEpisode:
-				seasonclass += "aired"
+			if seas_ep_idx % _nStripe == 0:
+				stripe = ' s'
 			else:
-				seasonclass += "unaired"
+				stripe = ''
 
-		if episode.season != prevseason:
-			opl('<tr class="eprow epkeyrow %s">' % seasonclass)
-			prevseason = episode.season
-			seasEpNum = 1
-		else:
-			opl('<tr class="eprow %s">' % seasonclass)
-			seasEpNum += 1
+			season_class = "seas%i" % season.number
 
-		classes = stripe
-		if (seasEpNum == 1):
-			classes += " tb"
-		elif (seasEpNum == 10):
-			classes += " bb"
+			season_title_class = season_class + "title"
 
-		if isEnd:
-			op(_tab + '<th class="eptitle lb%s%s">' % (classes, hideOnFloat))
-			op('<div class="eptitleinside">')
-			opl(episode.name + "</div></th>")
-			opl(_tab + '<th class="epnum%s%s rb">%i</th>' % (classes, hideOnFloat, seasEpNum))
+			if season.number == _currSeason:
+				if episode.number <= _latestEpisode:
+					season_class += "aired"
+				else:
+					season_class += "unaired"
 
-		if seasEpNum == 1:
-			opl(_tab + '<th rowspan="10" class="seasontitle %s%s">' % (seasontitleclass, hideOnFloat))
-
-			if _useImgHeaders:
-				opl('<img src="imgs/s%ititle.png" alt="Season %i">' % (episode.season.number, episode.season.number))
+			if seas_ep_idx == 0:
+				opl('<tr class="eprow epkeyrow %s">' % season_class)
 			else:
-				opl(_tab + _tab + '<div class="seasonnamerotate">')
-				opl(_tab + _tab + _tab + '<div class="seasonnameinside">Season %s</div>' % toRomanNumeral(
-					int(episode.season.number)))
-				opl(_tab + _tab + "</div>")
+				opl('<tr class="eprow %s">' % season_class)
 
-			opl(_tab + "</th>")
+			classes = stripe
+			if seas_ep_idx == 0:
+				classes += " tb"
+			elif seas_ep_idx == len(season.episodes) - 1:
+				classes += " bb"
 
-		if not isEnd:
-			opl(_tab + '<th class="epnum%s%s">%i</th>' % (
-				classes, hideOnFloat, seasEpNum))
-			op(_tab + '<th class="eptitle rb%s%s">' % (classes, hideOnFloat))
-			op('<div class="eptitleinside">')
-			opl(episode.name + "</div></th>")
+			if is_end:
+				op('<th class="eptitle lb%s%s">' % (classes, hide_on_float), indent=1)
+				op('<div class="eptitleinside">')
+				opl(episode.name + "</div></th>")
+				opl('<th class="epnum%s%s rb">%i</th>' % (classes, hide_on_float, seas_ep_num), indent=1)
 
-		if isBody:
-			print_body_cells(seasEpNum, totEpNum)
+			if seas_ep_idx == 0:
+				opl('<th rowspan="10" class="seasontitle %s%s">' % (season_title_class, hide_on_float), indent=1)
 
-		opl("</tr>")
+				if _useImgHeaders:
+					opl('<img src="imgs/s%ititle.png" alt="Season %i">' % (episode.season.number, episode.season.number))
+				else:
+					opl('<div class="seasonnamerotate">', indent=2)
+					opl('<div class="seasonnameinside">Season %s</div>' % toRomanNumeral(
+						int(episode.season.number)), indent=3)
+					opl("</div>", indent=2)
+
+				opl("</th>", indent=1)
+
+			if not is_end:
+				opl('<th class="epnum%s%s">%i</th>' % (classes, hide_on_float, seas_ep_num), indent=1)
+				op('<th class="eptitle rb%s%s">' % (classes, hide_on_float), indent=1)
+				op('<div class="eptitleinside">')
+				opl(episode.name + "</div></th>")
+
+			if is_body:
+				print_body_cells(writer, episode, seas_ep_num, debug_print_this_line=(episode.number == 1))
+
+			opl("</tr>")
 
 
-def do_printing(db):
+def do_printing(db, input_dir='input', output_dir='output', output_print_dir='output-print'):
 	global g_db
-	global g_inFileInter, g_inFilePrint, g_outFileInter, g_outFilePrint, g_opInterVer, g_opPrintVer
 
 	g_db = db
 
-	g_opInterVer = True
-	g_opPrintVer = True
+	html_template_filename_inter = os.path.join(input_dir, 'template.html')
+	html_template_filename_print = os.path.join(input_dir, 'template-print.html')
+	output_filename_inter = os.path.join(output_dir, 'bookshow.html')
+	output_filename_print = os.path.join(output_print_dir, 'bookshow_print.html')
 
-	print("Creating output file:", _outputFilenameInter)
+	print('Opening files')
+	with \
+			open(html_template_filename_inter, 'r') as in_file_interactive, \
+			open(html_template_filename_print, 'r') as in_file_print, \
+			open(output_filename_inter, 'w') as out_file_interactive, \
+			open(output_filename_print, 'w') as out_file_print:
 
-	g_inFileInter = open(_htmlTemplateFilenameInter, 'r')
-	g_inFilePrint = open(_htmlTemplateFilenamePrint, 'r')
-	g_outFileInter = open(_outputFilenameInter,'w')
-	g_outFilePrint = open(_outputFilenamePrint,'w')
+		both_writer = FileWriter(out_file_print, out_file_interactive)
+		inter_writer = FileWriter(out_file_interactive)
+		print_writer = FileWriter(out_file_print)
 
-	print_html_header()
+		w = both_writer
 
-	opl("<div id=\"tablediv\" class=\"cpov spoiler_b0\">")
+		print('Writing HTML Header')
+		print_html_header(inter_writer, in_file_interactive)
+		print_html_header(print_writer, in_file_print)
 
-	##### Print floating table #####
+		w.opl('<div id="tablediv" class="cpov spoiler_b0">')
 
-	print("Writing floating table")
+		##### Print floating table #####
 
-	g_opPrintVer = False
+		print("Writing floating table")
 
-	opl("<table id=\"floatingtable\">")
+		w = inter_writer
 
-	opl("<thead>")
-	opl("<tr class=\"booktitlerow\">")
-	opl(_tab + "<th colspan=\"3\" rowspan=\"2\" class=\"cornerbox rb\"><div class=\"cornerboxdiv\">" + _topLeftBox + "</div></th>")
-	opl("</tr>")
-	opl("<tr></tr>")
-	opl("</thead>")
+		w.opl('<table id="floatingtable">')
 
-	print_episode_rows(isBody=False)
+		w.opl('<thead>')
+		w.opl('<tr class="booktitlerow">')
+		w.opl('<th colspan="3" rowspan="2" class="cornerbox rb"><div class="cornerboxdiv">%s</div></th>' % _topLeftBox, indent=1)
+		w.opl('</tr>')
+		w.opl('<tr></tr>')
+		w.opl('</thead>')
 
+		print_episode_rows(w, is_body=False)
 
-	g_opPrintVer = False
-	opl("</table>")
+		w.opl("</table>")
 
-	##### thead #####
+		##### thead #####
 
-	print("Writing table chapter headers")
+		print("Writing table chapter headers")
 
-	g_opPrintVer = True
+		w = both_writer
 
-	opl("<div id=\"maintablediv\">")
+		w.opl('<div id="maintablediv">')
 
-	opl("<table id=\"maintable\">")
-	opl("<thead>")
-	opl("<tr class=\"booktitlerow\">")
+		w.opl('<table id="maintable">')
+		w.opl('<thead>')
+		w.opl('<tr class="booktitlerow">')
 
-	# Non-floating top-left box
-	opl(_tab + "<th colspan=\"3\" rowspan=\"2\" class=\"cornerbox hideonfloat\"><div class=\"cornerboxdiv\">" + _topLeftBox + "</div></th>")
+		# Non-floating top-left box
+		w.opl('<th colspan="3" rowspan="2" class="cornerbox hideonfloat"><div class="cornerboxdiv">%s</div></th>' % _topLeftBox, indent=1)
 
-	print_book_title_cells()
+		print_book_title_cells(w)
 
-	opl("</tr>")
-	opl("<tr>")
+		w.opl("</tr>")
+		w.opl("<tr>")
 
-	print_chapter_title_cells()
+		print_chapter_title_cells(w)
 
-	opl("</tr>")
-	opl("</thead>")
+		w.opl("</tr>")
+		w.opl("</thead>")
 
-	##### tbody #####
+		##### tbody #####
 
-	opl("<tbody>")
+		w.opl("<tbody>")
 
-	print("")
-	print("***** Writing table body *****")
-	print("")
+		print("")
+		print("***** Writing table body *****")
+		print("")
 
-	print_episode_rows(isBody=True)
+		print_episode_rows(w, is_body=True)
 
-	opl("</tbody>")
-	opl("</table>")
-	opl("</div> <!-- /maintablediv -->")
+		w.opl("</tbody>")
+		w.opl("</table>")
+		w.opl("</div> <!-- /maintablediv -->")
 
-	##### Print floating table - print version only #####
+		##### Print floating table - print version only #####
 
-	g_opPrintVer = True
-	g_opInterVer = False
+		w = print_writer
 
-	opl("<table id=\"floatingtable\">")
+		w.opl('<table id="floatingtable">')
 
-	opl("<thead>")
-	opl("<tr class=\"booktitlerow\">")
-	opl(_tab + "<th colspan=\"3\" rowspan=\"2\" class=\"cornerbox lb\"><div class=\"cornerboxdiv\">&nbsp;</div></th>")
-	opl("</tr>")
-	opl("<tr></tr>")
-	opl("</thead>")
+		w.opl('<thead>')
+		w.opl('<tr class="booktitlerow">')
+		w.opl('<th colspan="3" rowspan="2" class="cornerbox lb"><div class="cornerboxdiv">&nbsp;</div></th>', indent=1
+			  )
+		w.opl("</tr>")
+		w.opl("<tr></tr>")
+		w.opl("</thead>")
 
-	print_episode_rows(isBody=False, isEnd=True)
+		print_episode_rows(w, is_body=False, is_end=True)
 
-	opl("</table>")
+		w.opl("</table>")
 
-	##### Done #####
+		##### Done #####
 
-	g_opPrintVer = True
-	g_opInterVer = True
-	opl("</div> <!-- /tablediv -->")
+		w = both_writer
 
-	print("")
-	print("***** Table body complete *****")
-	print("")
+		w.opl("</div> <!-- /tablediv -->")
 
-	print_html_footer()
+		print("")
+		print("***** Table body complete *****")
+		print("")
 
-	print("Closing HTML files")
-	g_inFileInter.close()
-	g_inFilePrint.close()
-	g_outFileInter.close()
-	g_outFilePrint.close()
+		print('Writing HTML footer')
+		print_html_footer(inter_writer, in_file_interactive)
+		print_html_footer(print_writer, in_file_print)
