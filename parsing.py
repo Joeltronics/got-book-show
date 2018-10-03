@@ -87,14 +87,7 @@ def parse_chapters(filename, book_list):
 					povchar = "Other"
 			occurred = bool(int(row[7]))
 
-			matching_books = [book for book in book_list if book.name == bookname]
-
-			if not matching_books:
-				raise ValueError('Could not find book matching name "%s"' % bookname)
-			elif len(matching_books) > 1:
-				print('WARNING: found multiple books matching name "%s"' % bookname)
-
-			book = matching_books[0]
+			book = find_unique(book_list, lambda book: book.name == bookname)
 			book.num_chapters += 1
 
 			total_chap_num += 1

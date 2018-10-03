@@ -29,7 +29,7 @@ A note from the author:
 """
 
 
-from typing import List
+from utils import find_unique
 
 
 class Book:
@@ -135,15 +135,4 @@ class DB:
 		self.connections = []
 
 	def find_chapter(self, chap_name, book_num):
-		chapters = [
-			chapter for chapter in self.chapters
-			if (chapter.book.number == book_num) and (chapter.name == chap_name)
-		]
-
-		if len(chapters) == 0:
-			return None
-
-		if len(chapters) > 1:
-			print("WARNING: multiple chapters found matching book #", book_num, "named", chap_name)
-
-		return chapters[0]
+		return find_unique(self.chapters, lambda chapter: (chapter.book.number == book_num) and (chapter.name == chap_name))

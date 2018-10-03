@@ -29,6 +29,7 @@ A note from the author:
 """
 
 import string
+from typing import List, Callable
 
 
 _debug = False
@@ -51,7 +52,24 @@ def debug_print(*args, **kwargs):
 		print(*args, **kwargs)
 
 
-# No numpy necessary!
+def find_unique(list: List, matching_function: Callable):
+	"""Find an item in a list, according to matching_function
+	Assumes there is a single of the item in the list
+
+	:param list: list to find in
+	:param matching_function:
+	:return: the item
+	:raises: ValueError if item is not in list or if multiple matches
+	"""
+	vals = [item for item in list if matching_function(item)]
+	if len(vals) == 0:
+		raise ValueError('Failed to find item in list')
+	elif len(vals) > 1:
+		raise ValueError('Multiple matches in list')
+	return vals[0]
+
+
+# No point importing numpy for a single function
 def cumsum(x):
 	return [sum(x[:i + 1]) for i in range(len(x))]
 
