@@ -85,7 +85,7 @@ def parse_chapters(filename, book_list):
 					# IF it's a "the" chapter, there should be a pov char set!
 					print("WARNING: no POV char given for chapter " + chapName)
 					povchar = "Other"
-			occurred = row[7]
+			occurred = bool(int(row[7]))
 
 			matching_books = [book for book in book_list if book.name == bookname]
 

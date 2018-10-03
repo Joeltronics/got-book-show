@@ -58,7 +58,7 @@ class Book:
 
 
 class Chapter:
-	def __init__(self, number: int, book: Book, number_in_book: int, name: str, pov_char: str, occurred: str):
+	def __init__(self, number: int, book: Book, number_in_book: int, name: str, pov_char: str, occurred: bool):
 		"""
 		:param number: chapter number (overall), 1-indexed
 		:param book: reference to book

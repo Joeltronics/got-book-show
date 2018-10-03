@@ -94,16 +94,12 @@ def is_chap_name_empty(chap_name):
 	return (x == '')
 
 
-# FIXME: this assumes always 10 episodes per season!
-def get_season_num_for_ep_num(ep_num):
-	return ((ep_num - 1) // 10) + 1
-
-
 def get_all_chapters_with_pov(pov):
 	assert g_db is not None
 	chapters = [chapter for chapter in g_db.chapters if chapter['pov'] == pov]
 	chapters = sorted(chapters, key=lambda k: k['totChapNum'])
 	return chapters
+
 
 def print_html_header():
 	global g_opInterVer, g_opPrintVer
@@ -296,7 +292,7 @@ def print_chapter_title_cells():
 		else:
 			classes2 = "cni"
 
-			if chap.occurred == '0':
+			if not chap.occurred:
 				classes2 += " ho"
 
 			opl(_tab + "<th class=\"" + classes + "\" title=\"" + chap.name + "\"><div class=\"cnr\"><div class=\"" + classes2 + "\">" + chapName + "</div></div></th>")
