@@ -71,32 +71,33 @@ def parse_chapters(filename, book_list):
 			if not any(row):
 				continue
 
-			bookname = row[0]
-			chapNum = int(row[1])
-			chapName = row[2]
-			povchar = row[3]
-			if povchar == '':
+			book_name = row[0]
+			chap_num = int(row[1])
+			chap_name = row[2]
+			pov_char = row[3]
+			if not pov_char:
 				# if no POV char given in CSV file, use first word of chapter name
-				povchar = row[2].split()[0]
-				if povchar[0:3].lower() in ["pro", "epi"]:
+				pov_char = row[2].split()[0]
+				if pov_char[0:3].lower() in ["pro", "epi"]:
 					# If it's a prologue/epilogue then always make it "other"
-					povchar = "Other"
-				elif povchar[0:3].lower() == "the":
-					# IF it's a "the" chapter, there should be a pov char set!
-					print("WARNING: no POV char given for chapter " + chapName)
-					povchar = "Other"
+					pov_char = "Other"
+				elif pov_char[0:3].lower() == "the":
+					# If it's a "the" chapter, there should be a pov char set!
+					print("WARNING: no POV char given for chapter " + chap_name)
+					pov_char = "Other"
+
 			occurred = bool(int(row[7]))
 
-			book = find_unique(book_list, lambda book: book.name == bookname)
+			book = find_unique(book_list, lambda book: book.name == book_name)
 
 			total_chap_num += 1
 
 			chapter = Chapter(
 				number=total_chap_num,
 				book=book,
-				number_in_book=chapNum,
-				name=chapName,
-				pov_char=povchar,
+				number_in_book=chap_num,
+				name=chap_name,
+				pov_char=pov_char,
 				occurred=occurred,
 			)
 
@@ -111,9 +112,12 @@ def parse_chapters(filename, book_list):
 def parse_combined_order(filename, chapters, books):
 	print("Processing %s" % filename)
 	combined_chapter_list = []
-	with open(filename, 'rU') as txtFile:
-		line = txtFile.readline()
-		while line:
+	with open(filename, 'rU') as txt_file:
+		first = True
+		line = ''
+		while line or first:
+			line = txt_file.readline()
+			first = False
 
 			words = line.split()
 			words = [word.lower() for word in words]
@@ -127,19 +131,17 @@ def parse_combined_order(filename, chapters, books):
 			else:
 				print("ERROR: neither AFFC nor ADWD not found in line:")
 				print(line)
-				line = txtFile.readline()
 				continue
 
 			# combined.txt 1-indexes chapters
-			chapNum = int(words[n + 1]) - 1
+			chap_num = int(words[n + 1]) - 1
 
-			chapter = chapters[chapNum + books[book_num - 1].chapters[0].number - 1]
+			chapter = chapters[chap_num + books[book_num - 1].chapters[0].number - 1]
 			combined_chapter_list.append(chapter)
 
 			debug_print(chapter)
 			debug_print(line)
 
-			line = txtFile.readline()
 	return combined_chapter_list
 
 
@@ -181,10 +183,10 @@ def parse_episodes(filename):
 
 def parse_connections(filename, db):
 	print("Processing %s" % filename)
-	connList = []
+	conn_list = []
 	with open(filename) as csvFile:
-		connectionfile = csv.reader(csvFile)
-		for row in connectionfile:
+		reader = csv.reader(csvFile)
+		for row in reader:
 			if row[0].isdigit():
 
 				# FIXME: this assumes 10 episodes per season
@@ -215,7 +217,7 @@ def parse_connections(filename, db):
 
 				episode = db.episodes[ep_num - 1]
 
-				connList.append(Connection(
+				conn_list.append(Connection(
 					episode=episode,
 					chapter=chapter,
 					strength=strength,
@@ -223,9 +225,9 @@ def parse_connections(filename, db):
 					notes=notes,
 				))
 
-	debug_print(repr(connList[0:10]))
+	debug_print(repr(conn_list[0:10]))
 
-	return connList
+	return conn_list
 
 
 def do_parsing(dir='input') -> DB:
