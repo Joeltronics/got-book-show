@@ -34,11 +34,15 @@ from utils import find_unique
 
 
 class Book:
+
+	is_combined = False
+
 	def __init__(self, number: int, name: str, abbreviation: str, chapters: Optional[List]=None):
 		"""
 		:param number: 1-indexed
 		:param name: book name
-		:param abbreviation: abbreviation, a.g. "AGoT"
+		:param abbreviation: abbreviation, e.g. "AGoT"
+		:param chapters: list of chapters; can be given here or populated later
 		"""
 		self.number = number
 		self.name = name
@@ -49,17 +53,46 @@ class Book:
 		return self.name
 
 	def __repr__(self):
-		return 'Book(%i: %s ("%s"), %i chapters' % (
+		return 'Book(%i: %s ("%s"), %i chapters)' % (
 			self.number,
 			self.name,
 			self.abbreviation,
-			len(self.chapters)
+			len(self.chapters),
 		)
+
+
+class CombinedBook(Book):
+
+	is_combined = True
+
+	def __init__(self, number: int, name: str, abbreviation: str, combined_books: List[Book], chapters: Optional[List]=None):
+		"""
+		:param number: token to use for fake "book" in chart
+		:param name: combined book name
+		:param abbreviation: abbreviation, e.g. "AFfC + ADwD"
+		:param combined_books: which books are combined
+		:param chapters: list of chapters; can be given here or populated later
+		"""
+		super().__init__(number, name, abbreviation, chapters)
+		self.combined_books = combined_books
+
+	def __str__(self):
+		return self.name
+
+	def __repr__(self):
+		return 'CombinedBook(%i: %s ("%s"), %i chapters)' % (
+			self.number,
+			self.name,
+			self.abbreviation,
+			len(self.chapters),
+		)
+
 
 
 class Chapter:
 	def __init__(self, number: int, book: Book, number_in_book: int, name: str, pov_char: str, occurred: bool):
 		"""
+
 		:param number: chapter number (overall), 1-indexed
 		:param book: reference to book
 		:param number_in_book: number in book, 1-indexed
@@ -100,7 +133,7 @@ class Episode:
 		self.name = name
 
 	def __str__(self):
-		return '%i: "%s", season %i' % (self.number, self.name, self.season)
+		return '%i: "%s", season %i' % (self.number, self.name, self.season.number)
 
 	def __repr__(self):
 		return 'Episode(%s)' % str(self)
@@ -133,7 +166,6 @@ class DB:
 	def __init__(self):
 		self.books = []
 		self.chapters = []
-		self.chapters_interleaved = []
 
 		self.seasons = []
 		self.episodes = []

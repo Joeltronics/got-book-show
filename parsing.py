@@ -36,7 +36,6 @@ import csv
 
 
 def parse_books(filename):
-	print("Processing %s" % filename)
 	book_list = []
 
 	with open(filename) as csv_file:
@@ -58,8 +57,6 @@ def parse_books(filename):
 
 
 def parse_chapters(filename, book_list):
-	print("Processing %s" % filename)
-
 	chapter_list = []
 	total_chap_num = 0
 
@@ -110,14 +107,19 @@ def parse_chapters(filename, book_list):
 
 
 def parse_combined_order(filename, chapters, books):
-	print("Processing %s" % filename)
-	combined_chapter_list = []
+
+	combined_book = CombinedBook(
+		45,
+		'A Feast for Crows & A Dance with Dragons (Chronological)',
+		abbreviation='AFfC + ADwD',
+		combined_books=[books[3], books[4]])
+
+
 	with open(filename, 'rU') as txt_file:
-		first = True
-		line = ''
-		while line or first:
+		while True:
 			line = txt_file.readline()
-			first = False
+			if not line:
+				break
 
 			words = line.split()
 			words = [word.lower() for word in words]
@@ -137,17 +139,15 @@ def parse_combined_order(filename, chapters, books):
 			chap_num = int(words[n + 1]) - 1
 
 			chapter = chapters[chap_num + books[book_num - 1].chapters[0].number - 1]
-			combined_chapter_list.append(chapter)
+			combined_book.chapters.append(chapter)
 
 			debug_print(chapter)
 			debug_print(line)
 
-	return combined_chapter_list
+	return combined_book
 
 
 def parse_episodes(filename):
-	print("Processing %s" % filename)
-
 	episode_list = []
 	season_list = []
 
@@ -182,7 +182,6 @@ def parse_episodes(filename):
 
 
 def parse_connections(filename, db):
-	print("Processing %s" % filename)
 	conn_list = []
 	with open(filename) as csvFile:
 		reader = csv.reader(csvFile)
@@ -240,38 +239,34 @@ def do_parsing(dir='input') -> DB:
 
 	db = DB()
 
+	print("Processing books: %s" % books_filename)
 	db.books = parse_books(books_filename)
 
+	print("Processing chapters: %s" % chapter_filename)
 	db.chapters = parse_chapters(chapter_filename, db.books)
 
+	print("Processing combined order: %s" % combined_filename)
+	combined_book = parse_combined_order(combined_filename, db.chapters, db.books)
+
+	print(len(combined_book.chapters), "chapters in books 4+5")
+
+	db.books.insert(5, combined_book)
+
 	print("")
-	print("%i chapters in %i" % (len(db.chapters), len(db.books)))
+	print("%i chapters in %i books" % (len(db.chapters), len(db.books)))
 	for n, book in enumerate(db.books):
 		print("%i: %s" % (n+1, repr(book)))
 	print("")
 
-	combined_chapter_list = parse_combined_order(combined_filename, db.chapters, db.books)
-
-	print(len(combined_chapter_list), "chapters in books 4+5")
-
-	# Have to use list(), otherwise it just copies reference and that's bad
-	db.chapters_interleaved = list(db.chapters)
-
-	# Insert combined chapter list into chapter list
-	insertion_point = db.books[5].chapters[0].number - 1
-	db.chapters_interleaved[insertion_point:insertion_point] = combined_chapter_list
-
-	for chapter in db.chapters_interleaved:
-		debug_print(repr(chapter))
-
-	print("")
-
+	print("Processing episodes: %s" % episode_filename)
 	db.episodes, db.seasons = parse_episodes(episode_filename)
 	print("%i episodes, %i seasons" % (len(db.episodes), len(db.seasons)))
 
 	print("")
 
+	print("Processing connections: %s" % connections_filename)
 	db.connections = parse_connections(connections_filename, db)
 	print("%i episode-chapter connections" % len(db.connections))
 
 	return db
+

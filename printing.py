@@ -31,7 +31,6 @@ A note from the author:
 
 from utils import *
 import os.path
-import re
 
 
 # Darken every n cells
@@ -55,11 +54,6 @@ _latestEpisode = 50
 # If chapter name is longer than this many characters, it will be abbreviated
 # Based on number of utils.display_string_len_approx() returns
 _maxChapNameLength = 15
-
-# Use 45 as books 4 + 5 combined token
-# As long as there's never a Discworld show, this should be fine
-# Must match CSS & Javascript!
-_combined_book_token = 45
 
 
 # Globals
@@ -112,36 +106,6 @@ def print_html_footer(writer: FileWriter, in_file):
 		writer.op(line)
 
 
-def print_combined_title_cells(writer: FileWriter, book1, book2, book_token=_combined_book_token):
-	op = writer.op
-	opl = writer.opl
-
-	classes = 'booktitle b%ititle b%ic' % (book_token, book_token)
-	op('<th rowspan="2" class="%s" onclick="expandbook(%i)">' % (classes, book_token), indent=1)
-
-	if _useImgHeaders:
-		opl('<img src="imgs/b%icoll.png" alt="%s &amp; %s (Chronological)">' % (
-			book_token, book1.name, book2.name))
-	else:
-		op('<div class="booktitleabbrevrotate"><div class="booktitleabbrevinside">')
-		op('%i+%i' % (book1.number, book2.number))
-		op('</div></div>')
-
-	opl('</th>')
-
-	classes = 'booktitle b%ititle b%i' % (book_token, book_token)
-	op('<th colspan="%i" class="%s" onclick="collapsebook(%i)">' % (
-		len(book1.chapters) + len(book2.chapters), classes, book_token), indent=1)
-
-	if _useImgHeaders:
-		op('<img src="imgs/b%ititle.png" alt="%s &amp; %s (Chronological)">' % (
-			book_token, book1.name, book2.name))
-	else:
-		op('%s &amp; %s (Chronological)' % (book1.name, book2.name))
-
-	opl('</th>')
-
-
 def print_book_title_cells(writer: FileWriter):
 	assert g_db is not None
 
@@ -154,8 +118,10 @@ def print_book_title_cells(writer: FileWriter):
 		classes = 'booktitle b%ititle b%ic' % (book.number, book.number)
 		op('<th rowspan="2" class="%s" onclick="expandbook(%i)">' % (classes, book.number), indent=1)
 
+		book_name = htmlize_string(book.name)
+
 		if _useImgHeaders:
-			opl('<img src="imgs/b%icoll.png" alt="%s">' % (book.number, book.name))
+			opl('<img src="imgs/b%icoll.png" alt="%s">' % (book.number, book_name))
 		else:
 			op('<div class="booktitleabbrevrotate"><div class="booktitleabbrevinside">')
 			op(book.abbreviation)
@@ -167,13 +133,10 @@ def print_book_title_cells(writer: FileWriter):
 		op('<th colspan="%i" class="%s" onclick="collapsebook(%i)">' % (len(book.chapters), classes, book.number), indent=1)
 
 		if _useImgHeaders:
-			opl('<img src="imgs/b%ititle.png" alt="%s">' % (book.number, book.name))
+			opl('<img src="imgs/b%ititle.png" alt="%s">' % (book.number, book_name))
 		else:
-			op(book.name)
+			op(book_name)
 		opl('</th>')
-
-		if n == 4:
-			print_combined_title_cells(writer, g_db.books[3], g_db.books[4])
 
 
 def print_chapter_title_cells(writer: FileWriter):
@@ -181,88 +144,62 @@ def print_chapter_title_cells(writer: FileWriter):
 
 	op = writer.op
 	opl = writer.opl
-	
-	n = 0
-	combined_section = False
-	prev_chap_book_num = -1
-	prev_chap_num = -1
 
-	for chap in g_db.chapters_interleaved:
+	for book in g_db.books:
+		for stripe_counter, chap in enumerate(book.chapters):
 
-		book_num = int(chap.book.number)
-		chap_num = int(chap.number_in_book)
+			chap_num = int(chap.number_in_book)
 
-		# Determine if chapter is new book
+			# For "?" chapters after TWOW preview chaps
+			chap_name_isnt_real = is_chap_name_empty(chap.name)
 
-		# if gone down in book number or chapter number
-		if book_num <= prev_chap_book_num:
-			if chap_num <= prev_chap_num:
-				if not combined_section:
-					n = 0
-				combined_section = True
+			# if name longer than ~15 characters, abbreviate
+			# If we're in combined section, prepend book number to chapter
+			# Want real book number, not fake combined book number, so use chap.book.number rather than book.number
+			chap_name_to_display = abbrev_string(
+				chap.name,
+				_maxChapNameLength,
+				prefix=str(chap.book.number) if book.is_combined else None)
 
-				debug_print("book_num=%i, chap_num=%i" % (book_num, chap_num))
+			if chap_name_isnt_real:
+				classes = ["cn", "b%i" % chap.book.number, "bb"]
 
-		elif book_num == 6:
-			combined_section = False
+				if chap.number_in_book == 0:
+					classes.append("lb")
+				elif stripe_counter == len(chap.book.chapters) - 1:
+					classes.append("rb")
 
-		if book_num != prev_chap_book_num and not combined_section:
-			debug_print("book_num=%i, prev_chap_book_num=%i, combined_section=%s" % (
-				book_num, prev_chap_book_num, str(combined_section)))
-			n = 0
+			elif book.is_combined:
+				# Again, chap.book.number is different from book.number when combined
+				classes = ["cn", "b%i" % book.number, "b%ico" % chap.book.number, "bb"]
 
-		# For "?" chapters after TWOW preview chaps
-		chap_name_isnt_real = is_chap_name_empty(chap.name)
+				if stripe_counter == 0:
+					classes.append("lb")
+				elif chap_num == (len(g_db.books[4].chapters) - 1):
+					classes.append("rb")
 
-		# if name longer than ~15 characters, abbreviate
-		# If we're in combined section, prepend book number to chapter
-		chap_name_to_display = abbrev_string(
-			chap.name,
-			_maxChapNameLength,
-			prefix=str(book_num) if combined_section else None)
+			else:
+				classes = ["cn", "b%i" % chap.book.number, "bb"]
 
-		if chap_name_isnt_real:
-			classes = ["cn", "b%i" % chap.book.number, "bb"]
+				if chap.number_in_book == 0:
+					classes.append("lb")
+				elif stripe_counter == len(chap.book.chapters) - 1:
+					classes.append("rb")
 
-			if chap.number_in_book == 0:
-				classes.append("lb")
-			elif n == len(chap.book.chapters) - 1:
-				classes.append("rb")
+			if stripe_counter % _nStripe == 0:
+				classes.append("s")
 
-		elif combined_section:
-			classes = ["cn", "b%i" % _combined_book_token, "b%ico" % book_num, "bb"]
+			if chap_name_isnt_real:
+				opl('<th class="%s"><div class="cni nonrotate">?</div></th>' % (' '.join(classes)), indent=1)
 
-			if n == 0:
-				classes.append("lb")
-			elif chap_num == (len(g_db.books[4].chapters) - 1):
-				classes.append("rb")
+			else:
+				classes2 = "cni"
 
-		else:
-			classes = ["cn", "b%i" % chap.book.number, "bb"]
+				if not chap.occurred:
+					classes2 += " ho"
 
-			if chap.number_in_book == 0:
-				classes.append("lb")
-			elif n == len(chap.book.chapters) - 1:
-				classes.append("rb")
-
-		if n % _nStripe == 0:
-			classes.append("s")
-
-		if chap_name_isnt_real:
-			opl('<th class="%s"><div class="cni nonrotate">?</div></th>' % (' '.join(classes)), indent=1)
-
-		else:
-			classes2 = "cni"
-
-			if not chap.occurred:
-				classes2 += " ho"
-
-			opl('<th class="%s" title="%s"><div class="cnr"><div class="%s">%s</div></div></th>' % (
-				' '.join(classes), chap.name, classes2, chap_name_to_display), indent=1)
-		n += 1
-
-		prev_chap_book_num = book_num
-		prev_chap_num = chap_num
+				opl('<th class="%s" title="%s"><div class="cnr"><div class="%s">%s</div></div></th>' % (
+					' '.join(classes), chap.name, classes2, chap_name_to_display), indent=1)
 
 
 def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_line=False):
@@ -279,157 +216,127 @@ def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_
 	debug_print("episode %i, %i connections: %s" % (episode.number, len(connections), repr(connection_chapter_nums)))
 	debug_print(repr(connections) + _eol)
 
-	prev_book_num = None
-	prev_chap_num = None
-	combined_section = False
-	stripe_counter = None
-	for chapter in g_db.chapters_interleaved:
-
-		is_new_book = False
-
-		book_num = int(chapter.book.number)
-		chap_num = int(chapter.number_in_book)
-
-		tot_chap_num = chapter.number
-
-		# Determine if chapter is new book
-
-		# if gone down in both book number and chapter number, we're in 4+5 combined section
-		if prev_book_num is not None and book_num <= prev_book_num:
-			if prev_chap_num is not None and chap_num <= prev_chap_num:
-				if not combined_section:
-					is_new_book = True
-				combined_section = True
-
-		elif book_num == 6:
-			combined_section = False
-
-		if book_num != prev_book_num and not combined_section:
-			is_new_book = True
+	for book in g_db.books:
 
 		if debug_print_this_line:
-			if is_new_book:
-				if not combined_section:
-					debug_print('')
-					debug_print('Book', book_num, 'start')
-				else:
-					debug_print('')
-					debug_print('Book 4+5 combined start')
-
-		prev_book_num = book_num
-		prev_chap_num = chap_num
-
-		if is_new_book:
-			stripe_counter = 0
-
-			# Add book summary cell
-
-			if not combined_section:
-				classes = ["b%ic" % book_num, "lb", "rb"]
+			if not book.is_combined:
+				debug_print('')
+				debug_print('Book %i start' % book.number)
 			else:
-				classes = ["b%ic" % _combined_book_token, "lb", "rb"]
+				debug_print('')
+				debug_print('Book 4+5 combined start')
 
-			if seas_ep_num == 1:
-				classes.append("tb")
-			elif seas_ep_num == len(episode.season.episodes):
-				classes.append("bb")
+		# Add book summary cell
 
-			if (seas_ep_num - 1) % _nStripe == 0:
-				classes.append("s")
-
-			op('<td class="%s">' % ' '.join(classes), indent=1)
-
-			# Get all connections matching this episode
-			if not combined_section:
-				ep_book_connections = [
-					item for item in connections
-					if (item.episode.number == episode.number) and (item.chapter.book.number == book_num)
-				]
-			else:
-				ep_book_connections = [
-					item for item in connections
-					if (item.episode.number == episode.number) and (item.chapter.book.number in [4, 5])
-				]
-
-			# Is there a connection? If so, make div inside cell
-			if ep_book_connections:
-
-				classes = ["c"]
-
-				# Now figure out if there are strong connections or only weak
-				if any([item for item in ep_book_connections if item.strength == 1]):
-					classes.append("sc")
-				else:
-					classes.append("wc")
-
-				op('<div class="%s"></div>' % ' '.join(classes))
-
-			opl("</td>")
-
-		# Print cell
-
-		if debug_print_this_line:
-			debug_print("Book %i, Chapter %i" % (book_num, chap_num))
-
-		if not combined_section:
-			classes = ["b%i" % book_num]
-		else:
-			classes = ["b%i" % _combined_book_token, "b%ico" % book_num]
+		classes = ["b%ic" % book.number, "lb", "rb"]
 
 		if seas_ep_num == 1:
 			classes.append("tb")
-		if seas_ep_num == len(episode.season.episodes):
+		elif seas_ep_num == len(episode.season.episodes):
 			classes.append("bb")
 
-		if not combined_section:
-			if chap_num == 0:
-				classes.append("lb")
-			if chap_num == len(chapter.book.chapters) - 1:
-				classes.append("rb")
-		else:
-			# First chapter of book 4 is first chapter of combined section
-			# Last chapter of book 5 is last chapter
-			if book_num == 4 and chap_num == 0:
-				classes.append("lb")
-			if book_num == 5 and chap_num == (len(g_db.books[4].chapters) - 1):
-				classes.append("rb")
-
-		if (stripe_counter % _nStripe == 0) or ((seas_ep_num - 1) % _nStripe == 0):
+		if (seas_ep_num - 1) % _nStripe == 0:
 			classes.append("s")
 
-		if debug_print_this_line:
-			if 'lb' in classes:
-				debug_print('left border')
-			if 'rb' in classes:
-				debug_print('right border')
+		op('<td class="%s">' % ' '.join(classes), indent=1)
 
-		op('<td class="%s">' % ' '.join(classes))
+		# Get all connections matching this episode
+		if book.is_combined:
+			ep_book_connections = [
+				item for item in connections
+				if (item.episode.number == episode.number) and (item.chapter.book in book.combined_books)
+			]
+		else:
+			ep_book_connections = [
+				item for item in connections
+				if (item.episode.number == episode.number) and (item.chapter.book.number == book.number)
+			]
 
 		# Is there a connection? If so, make div inside cell
-		if tot_chap_num in connection_chapter_nums:
-			conn = [item for item in connections if item.chapter.number == tot_chap_num][0]
+		if ep_book_connections:
+			classes = ["c"]
 
-			chap = g_db.chapters[tot_chap_num - 1]
-			povchar = chap.pov.lower()
-
-			classes = ["c", "pov%s" % povchar]
-
-			if conn.strength == 0:
-				classes.append("wc")
-			else:
+			# Now figure out if there are strong connections or only weak
+			if any([item.strength == 1 for item in ep_book_connections]):
 				classes.append("sc")
+			else:
+				classes.append("wc")
 
-			title = re.sub('"', '&quot;', conn.notes)
+			op('<div class="%s"></div>' % ' '.join(classes))
 
-			op('<div class="%s" title="%s"></div>' % (' '.join(classes), title))
+		opl("</td>")
 
-		op('</td>')
-		stripe_counter += 1
+		for stripe_counter, chapter in enumerate(book.chapters):
+
+			# For combined book, may be different from book.number
+			book_num = chapter.book.number
+			chap_num_in_book = chapter.number_in_book
+
+			# Print cell
+
+			if debug_print_this_line:
+				debug_print("Book %i, Chapter %i" % (book_num, chap_num_in_book))
+
+			if not book.is_combined:
+				classes = ["b%i" % book_num]
+			else:
+				classes = ["b%i" % book.number, "b%ico" % book_num]
+
+			if seas_ep_num == 1:
+				classes.append("tb")
+			if seas_ep_num == len(episode.season.episodes):
+				classes.append("bb")
+
+			if not book.is_combined:
+				if chap_num_in_book == 0:
+					classes.append("lb")
+
+				if chap_num_in_book == len(chapter.book.chapters) - 1:
+					classes.append("rb")
+			else:
+				# Assume first chapter of first book is first chronological, and last chapter of last book is last
+				# This is true for AFfC and ADwD, anyway...
+				first_combined_book = book.combined_books[0]
+				last_combined_book = book.combined_books[-1]
+				if book_num == first_combined_book.number and chap_num_in_book == 0:
+					classes.append("lb")
+				if book_num == last_combined_book.number and chap_num_in_book == (len(last_combined_book.chapters) - 1):
+					classes.append("rb")
+
+			if (stripe_counter % _nStripe == 0) or ((seas_ep_num - 1) % _nStripe == 0):
+				classes.append("s")
+
+			if debug_print_this_line:
+				if 'lb' in classes:
+					debug_print('left border')
+				if 'rb' in classes:
+					debug_print('right border')
+
+			op('<td class="%s">' % ' '.join(classes))
+
+			# Is there a connection? If so, make div inside cell
+			if chapter.number in connection_chapter_nums:
+				conn = [item for item in connections if item.chapter.number == chapter.number][0]
+				classes = ["c", "pov%s" % chapter.pov.lower()]
+
+				if conn.strength == 0:
+					classes.append("wc")
+				else:
+					classes.append("sc")
+
+				title = htmlize_string(conn.notes)
+
+				op('<div class="%s" title="%s"></div>' % (' '.join(classes), title))
+
+			op('</td>')
 
 
-# isBody indicates if this is the one that goes inside the main table
-# isEnd indicates if this is the one that goes at the very end (for print version)
 def print_episode_rows(writer: FileWriter, is_body: bool, is_end=False):
+	"""
+	:param writer:
+	:param is_body: indicates if this is the one that goes inside the main table
+	:param is_end: indicates if this is the one that goes at the very end (for print version)
+	"""
 	assert g_db is not None
 
 	op = writer.op

@@ -75,6 +75,11 @@ def find_unique(list: List, matching_function: Callable, throw_if_not_found=True
 	return vals[0]
 
 
+def htmlize_string(s: str) -> str:
+	"""Replace characters with HTML escape characters"""
+	return s.replace('&', '&amp;').replace('"', '&quot;')
+
+
 def to_roman_numeral(num: int) -> str:
 	if num < 1:
 		raise ValueError("Can't convert zero or negative to roman numberal!")
