@@ -51,7 +51,6 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 1,6,1,Tyrion V,1,0,
 1,6,1,Eddard XI,1,0,
 1,6,1,Sansa III,1,0,
-1,6,1,Daenerys V,1,0,
 1,6,1,Bran VII,0,0,Elements of Bran's dream
 1,6,1,Eddard XII,1,0,Ned reads the book of lineages
 1,6,1,Catelyn VII,1,1,Tyrion's Trial by Combat
@@ -489,7 +488,7 @@ Season,Episode,Book,Chapter,Strength,Major,Notes (title text)
 5,10,6,Theon I,0,0,Stannis prepares for the Battle of Winterfell
 ,,,,,,
 6,1,5,The Blind Girl,0,0,
-6,2,6,Theon I,0,0,
+6,1,6,Theon I,0,0,
 ,,,,,,
 6,2,3,Catelyn V,1,1,We learn of Balon Greyjoy's death and of Euron's return to the Iron Islands
 6,2,4,The Prophet,0,0,

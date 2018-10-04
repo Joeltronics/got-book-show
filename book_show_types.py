@@ -158,8 +158,8 @@ class Connection:
 		return 'Episode %i, Chapter %i' % (self.episode.number, self.chapter.number)
 
 	def __repr__(self):
-		# TODO: add more details (repr should show all data)
-		return 'Connection(%s)' % str(self)
+		return 'Connection(Episode %i, Chapter %i, Strength %s, Major %s, Notes: %s)' % (
+			self.episode.number, self.chapter.number, str(self.strength), str(self.major), self.notes)
 
 
 class DB:

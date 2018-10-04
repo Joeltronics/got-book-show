@@ -186,11 +186,62 @@ def print_chapter_title_cells(writer: FileWriter):
 					' '.join(classes), chap.name, classes_inner, chap_name_to_display), indent=1)
 
 
-def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_line=False):
-	assert g_db is not None
+def print_connection(writer: FileWriter, strength, notes=None, pov=None):
 
+	classes = ["c"]
+
+	if pov is not None:
+		classes.append("pov%s" % pov.lower())
+
+	if strength:
+		classes.append("sc")
+	else:
+		classes.append("wc")
+
+	classes = ' '.join(classes)
+
+	if notes:
+		writer.op('<div class="%s" title="%s"></div>' % (classes, htmlize_string(notes)))
+	else:
+		writer.op('<div class="%s"></div>' % classes)
+
+
+def print_book_summary_cell(writer: FileWriter, episode, seas_ep_num, book, connections):
 	op = writer.op
 	opl = writer.opl
+
+	classes = ["b%ic" % book.number, "lb", "rb"]
+
+	if seas_ep_num == 1:
+		classes.append("tb")
+
+	if seas_ep_num == len(episode.season.episodes):
+		classes.append("bb")
+
+	if (seas_ep_num - 1) % _nStripe == 0:
+		classes.append("s")
+
+	op('<td class="%s">' % ' '.join(classes), indent=1)
+
+	if book.is_combined:
+		ep_book_connections = [
+			item for item in connections
+			if (item.episode.number == episode.number) and (item.chapter.book in book.combined_books)
+		]
+	else:
+		ep_book_connections = [
+			item for item in connections
+			if (item.episode.number == episode.number) and (item.chapter.book is book)
+		]
+
+	if ep_book_connections:
+		print_connection(writer, strength=any([item.strength for item in ep_book_connections]))
+
+	opl("</td>")
+
+
+def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_line=False):
+	assert g_db is not None
 
 	# First, make list of all connections that match this episode
 	connections = [item for item in g_db.connections if item.episode == episode]
@@ -206,45 +257,7 @@ def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_
 			debug_print('')
 			debug_print('Book %i start' % book.number)
 
-		# Add book summary cell
-
-		classes = ["b%ic" % book.number, "lb", "rb"]
-
-		if seas_ep_num == 1:
-			classes.append("tb")
-		elif seas_ep_num == len(episode.season.episodes):
-			classes.append("bb")
-
-		if (seas_ep_num - 1) % _nStripe == 0:
-			classes.append("s")
-
-		op('<td class="%s">' % ' '.join(classes), indent=1)
-
-		# Get all connections matching this episode
-		if book.is_combined:
-			ep_book_connections = [
-				item for item in connections
-				if (item.episode.number == episode.number) and (item.chapter.book in book.combined_books)
-			]
-		else:
-			ep_book_connections = [
-				item for item in connections
-				if (item.episode.number == episode.number) and (item.chapter.book.number == book.number)
-			]
-
-		# Is there a connection? If so, make div inside cell
-		if ep_book_connections:
-			classes = ["c"]
-
-			# Now figure out if there are strong connections or only weak
-			if any([item.strength == 1 for item in ep_book_connections]):
-				classes.append("sc")
-			else:
-				classes.append("wc")
-
-			op('<div class="%s"></div>' % ' '.join(classes))
-
-		opl("</td>")
+		print_book_summary_cell(writer, episode, seas_ep_num, book, connections)
 
 		for idx, chapter in enumerate(book.chapters):
 
@@ -282,27 +295,25 @@ def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_
 				if 'rb' in classes:
 					debug_print('right border')
 
-			op('<td class="%s">' % ' '.join(classes))
+			writer.op('<td class="%s">' % ' '.join(classes))
 
 			# Is there a connection? If so, make div inside cell
 			if chapter.number in connection_chapter_nums:
-				conn = [item for item in connections if item.chapter.number == chapter.number][0]
-				classes = ["c", "pov%s" % chapter.pov.lower()]
+				conns = [item for item in connections if item.chapter.number == chapter.number]
 
-				if conn.strength == 0:
-					classes.append("wc")
-				else:
-					classes.append("sc")
+				if len(conns) > 1:
+					print('Multiple connections found for episode %i & chapter %i:' % (episode.number, chapter.number))
+					for conn in conns:
+						print('\t' + repr(conn))
 
-				title = htmlize_string(conn.notes)
+				notes = '; '.join([c.notes for c in conns if c.notes])
+				print_connection(writer, max([c.strength for c in conns]), notes, pov=chapter.pov)
 
-				op('<div class="%s" title="%s"></div>' % (' '.join(classes), title))
-
-			op('</td>')
+			writer.op('</td>')
 
 
 def print_episode_rows(writer: FileWriter, is_body: bool, is_end=False):
-	
+
 	"""
 	:param writer:
 	:param is_body: indicates if this is the one that goes inside the main table
