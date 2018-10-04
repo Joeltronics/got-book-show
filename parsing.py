@@ -69,7 +69,7 @@ def parse_chapters(filename, book_list):
 				continue
 
 			book_name = row[0]
-			chap_num = int(row[1])
+			chap_num_in_book = int(row[1]) + 1  # These are 0-indexed in CSV (i.e. 0 is prologue)
 			chap_name = row[2]
 			pov_char = row[3]
 			if not pov_char:
@@ -92,7 +92,7 @@ def parse_chapters(filename, book_list):
 			chapter = Chapter(
 				number=total_chap_num,
 				book=book,
-				number_in_book=chap_num,
+				number_in_book=chap_num_in_book,
 				name=chap_name,
 				pov_char=pov_char,
 				occurred=occurred,

@@ -111,8 +111,8 @@ class Chapter:
 		return 'Chapter %i: "%s"' % (self.number, self.name)
 
 	def __repr__(self):
-		# TODO: add more details (repr should show all data)
-		return 'Chapter(%s)' % str(self)
+		return 'Chapter(%i, %s %i: %s, POV %s, occurred: %s)' % (
+			self.number, self.book.name, self.number_in_book, self.name, self.pov, str(self.occurred))
 
 
 class Season:

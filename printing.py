@@ -146,9 +146,7 @@ def print_chapter_title_cells(writer: FileWriter):
 	opl = writer.opl
 
 	for book in g_db.books:
-		for stripe_counter, chap in enumerate(book.chapters):
-
-			chap_num = int(chap.number_in_book)
+		for idx, chap in enumerate(book.chapters):
 
 			# For "?" chapters after TWOW preview chaps
 			chap_name_isnt_real = is_chap_name_empty(chap.name)
@@ -161,45 +159,31 @@ def print_chapter_title_cells(writer: FileWriter):
 				_maxChapNameLength,
 				prefix=str(chap.book.number) if book.is_combined else None)
 
-			if chap_name_isnt_real:
-				classes = ["cn", "b%i" % chap.book.number, "bb"]
-
-				if chap.number_in_book == 0:
-					classes.append("lb")
-				elif stripe_counter == len(chap.book.chapters) - 1:
-					classes.append("rb")
-
-			elif book.is_combined:
-				# Again, chap.book.number is different from book.number when combined
+			if book.is_combined:
 				classes = ["cn", "b%i" % book.number, "b%ico" % chap.book.number, "bb"]
-
-				if stripe_counter == 0:
-					classes.append("lb")
-				elif chap_num == (len(g_db.books[4].chapters) - 1):
-					classes.append("rb")
-
 			else:
 				classes = ["cn", "b%i" % chap.book.number, "bb"]
 
-				if chap.number_in_book == 0:
-					classes.append("lb")
-				elif stripe_counter == len(chap.book.chapters) - 1:
-					classes.append("rb")
+			if chap is book.chapters[0]:
+				classes.append("lb")
 
-			if stripe_counter % _nStripe == 0:
+			if chap is book.chapters[-1]:
+				classes.append("rb")
+
+			if idx % _nStripe == 0:
 				classes.append("s")
 
 			if chap_name_isnt_real:
 				opl('<th class="%s"><div class="cni nonrotate">?</div></th>' % (' '.join(classes)), indent=1)
 
 			else:
-				classes2 = "cni"
+				classes_inner = "cni"
 
 				if not chap.occurred:
-					classes2 += " ho"
+					classes_inner += " ho"
 
 				opl('<th class="%s" title="%s"><div class="cnr"><div class="%s">%s</div></div></th>' % (
-					' '.join(classes), chap.name, classes2, chap_name_to_display), indent=1)
+					' '.join(classes), chap.name, classes_inner, chap_name_to_display), indent=1)
 
 
 def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_line=False):
@@ -219,12 +203,8 @@ def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_
 	for book in g_db.books:
 
 		if debug_print_this_line:
-			if not book.is_combined:
-				debug_print('')
-				debug_print('Book %i start' % book.number)
-			else:
-				debug_print('')
-				debug_print('Book 4+5 combined start')
+			debug_print('')
+			debug_print('Book %i start' % book.number)
 
 		# Add book summary cell
 
@@ -266,16 +246,15 @@ def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_
 
 		opl("</td>")
 
-		for stripe_counter, chapter in enumerate(book.chapters):
+		for idx, chapter in enumerate(book.chapters):
 
 			# For combined book, may be different from book.number
 			book_num = chapter.book.number
-			chap_num_in_book = chapter.number_in_book
 
 			# Print cell
 
 			if debug_print_this_line:
-				debug_print("Book %i, Chapter %i" % (book_num, chap_num_in_book))
+				debug_print("Book %i, Chapter %i" % (book_num, chapter.number_in_book))
 
 			if not book.is_combined:
 				classes = ["b%i" % book_num]
@@ -284,26 +263,17 @@ def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_
 
 			if seas_ep_num == 1:
 				classes.append("tb")
+
 			if seas_ep_num == len(episode.season.episodes):
 				classes.append("bb")
 
-			if not book.is_combined:
-				if chap_num_in_book == 0:
-					classes.append("lb")
+			if chapter is book.chapters[0]:
+				classes.append("lb")
 
-				if chap_num_in_book == len(chapter.book.chapters) - 1:
-					classes.append("rb")
-			else:
-				# Assume first chapter of first book is first chronological, and last chapter of last book is last
-				# This is true for AFfC and ADwD, anyway...
-				first_combined_book = book.combined_books[0]
-				last_combined_book = book.combined_books[-1]
-				if book_num == first_combined_book.number and chap_num_in_book == 0:
-					classes.append("lb")
-				if book_num == last_combined_book.number and chap_num_in_book == (len(last_combined_book.chapters) - 1):
-					classes.append("rb")
+			if chapter is book.chapters[-1]:
+				classes.append("rb")
 
-			if (stripe_counter % _nStripe == 0) or ((seas_ep_num - 1) % _nStripe == 0):
+			if (idx % _nStripe == 0) or ((seas_ep_num - 1) % _nStripe == 0):
 				classes.append("s")
 
 			if debug_print_this_line:
@@ -332,6 +302,7 @@ def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_
 
 
 def print_episode_rows(writer: FileWriter, is_body: bool, is_end=False):
+	
 	"""
 	:param writer:
 	:param is_body: indicates if this is the one that goes inside the main table
