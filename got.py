@@ -34,6 +34,7 @@ A note from the author:
 import argparse
 
 from utils import *
+from book_show_types import *
 import parsing
 import printing
 
@@ -58,11 +59,19 @@ def main():
 	print(_copyrightInfo)
 	print("")
 
-	parsed = parsing.do_parsing()
+	db = parsing.do_parsing()
 
 	print("")
 
-	printing.do_printing(parsed)
+	print("Sanity checking books & chapters")
+	sanity_check_books_chapters(db.books, db.chapters)
+
+	print("Sanity checking seasons & episodes")
+	sanity_check_seasons_episodes(db.seasons, db.episodes)
+
+	print("")
+
+	printing.do_printing(db)
 
 	print("")
 	print("Complete!")

@@ -30,7 +30,7 @@ A note from the author:
 
 
 from typing import List, Optional
-from utils import find_unique
+from utils import find_unique, concatenate_lists
 
 
 class Book:
@@ -176,3 +176,54 @@ class DB:
 
 	def find_chapter(self, chap_name, book_num):
 		return find_unique(self.chapters, lambda chapter: (chapter.book.number == book_num) and (chapter.name == chap_name))
+
+
+# There is some duplicate data in here for convenience sake. For example:
+#   * Don't need chapter list since it's contained within books
+#   * Don't need chapter.number_in_book, since that could be deduced from position in book.chapters
+#   * Don't need chapter.number, since that could then further be deduced from book's position in db.books and number
+#     of chapters in each book
+#
+# Of course, deducing these could be a pain
+# If this was C and we were tight on memory, we could probably write a special function to do deduce this info for us...
+# but what's a little duplicate state? ;)
+#
+# These sanity checks ensure this duplicate data is all correct
+
+
+def sanity_check_books_chapters(books, chapters):
+
+	real_books = [book for book in books if not book.is_combined]
+
+	if not all([chapter.number == idx + 1 for idx, chapter in enumerate(chapters)]):
+		raise ValueError('Chapter list is not sorted & complete')
+
+	if not all([book.number == idx + 1 for idx, book in enumerate(real_books)]):
+		raise ValueError('Book list is not sorted & complete')
+
+	if chapters != concatenate_lists([book.chapters for book in real_books]):
+		raise ValueError('Chapter list derived from books does not match general chapter list')
+
+	for book in real_books:
+		if not all([chapter.number_in_book == idx + 1 for idx, chapter in enumerate(book.chapters)]):
+			raise ValueError('Chapter number in book does not match position in book list')
+		if not all([chapter.book is book for chapter in book.chapters]):
+			raise ValueError("Chapter's book reference does not match book it is in!")
+
+
+def sanity_check_seasons_episodes(seasons, episodes):
+
+	if not all([episode.number == idx + 1 for idx, episode in enumerate(episodes)]):
+		raise ValueError('Episode list is not sorted & complete')
+
+	if not all([season.number == idx + 1 for idx, season in enumerate(seasons)]):
+		raise ValueError('Season list is not sorted & complete')
+
+	if episodes != concatenate_lists([season.episodes for season in seasons]):
+		raise ValueError('Episode list derived from seasons does not match general episode list')
+
+	for season in seasons:
+		if not all([episode.number_in_season == idx + 1 for idx, episode in enumerate(season.episodes)]):
+			raise ValueError('Episode number in season does not match position in season list')
+		if not all([episode.season is season for episode in season.episodes]):
+			raise ValueError("Episodes's season reference does not match season it is in!")

@@ -50,6 +50,10 @@ def debug_print(*args, **kwargs):
 		print(*args, **kwargs)
 
 
+def concatenate_lists(lists: List[List]) -> List:
+	return sum(lists, [])
+
+
 def find_unique(list: List, matching_function: Callable, throw_if_not_found=True):
 	"""Find an item in a list, according to matching_function
 	Assumes there is a single of the item in the list
