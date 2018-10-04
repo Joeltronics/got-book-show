@@ -122,13 +122,15 @@ class Season:
 
 
 class Episode:
-	def __init__(self, number: int, season: Season, name: str):
+	def __init__(self, number: int, number_in_season: int, season: Season, name: str):
 		"""
 		:param number: episode number (overall), 1-indexed
+		:param number_in_season: episode numbr in season, 1-indexed
 		:param season: season number, 1-indexed
 		:param name: episode name
 		"""
 		self.number = number
+		self.number_in_season = number_in_season
 		self.season = season
 		self.name = name
 

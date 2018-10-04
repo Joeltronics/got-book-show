@@ -172,8 +172,14 @@ def parse_episodes(filename):
 				season = Season(number=season_num)
 				season_list.append(season)
 
+			num_in_season = len(season.episodes) + 1
+
 			number += 1
-			episode = Episode(number=number, season=season, name=name)
+			episode = Episode(
+				number=number,
+				number_in_season=num_in_season,
+				season=season,
+				name=name)
 
 			episode_list.append(episode)
 			season.episodes.append(episode)

@@ -56,11 +56,6 @@ _latestEpisode = 50
 _maxChapNameLength = 15
 
 
-# Globals
-
-g_db = None
-
-
 class FileWriter:
 	def __init__(self, *files):
 		self.files = files
@@ -78,13 +73,6 @@ class FileWriter:
 def is_chap_name_empty(chap_name):
 	x = ''.join(ch for ch in chap_name if ch.isalnum())
 	return x == ''
-
-
-def get_all_chapters_with_pov(pov):
-	assert g_db is not None
-	chapters = [chapter for chapter in g_db.chapters if chapter['pov'] == pov]
-	chapters = sorted(chapters, key=lambda k: k['totChapNum'])
-	return chapters
 
 
 def print_html_header(writer: FileWriter, in_file):
@@ -106,13 +94,12 @@ def print_html_footer(writer: FileWriter, in_file):
 		writer.op(line)
 
 
-def print_book_title_cells(writer: FileWriter):
-	assert g_db is not None
+def print_book_title_cells(writer: FileWriter, books):
 
 	op = writer.op
 	opl = writer.opl
 
-	for n, book in enumerate(g_db.books):
+	for n, book in enumerate(books):
 
 		# Column that summarizes book (for when column set is collapsed)
 		classes = 'booktitle b%ititle b%ic' % (book.number, book.number)
@@ -139,13 +126,12 @@ def print_book_title_cells(writer: FileWriter):
 		opl('</th>')
 
 
-def print_chapter_title_cells(writer: FileWriter):
-	assert g_db is not None
+def print_chapter_title_cells(writer: FileWriter, books):
 
 	op = writer.op
 	opl = writer.opl
 
-	for book in g_db.books:
+	for book in books:
 		for idx, chap in enumerate(book.chapters):
 
 			# For "?" chapters after TWOW preview chaps
@@ -206,19 +192,19 @@ def print_connection(writer: FileWriter, strength, notes=None, pov=None):
 		writer.op('<div class="%s"></div>' % classes)
 
 
-def print_book_summary_cell(writer: FileWriter, episode, seas_ep_num, book, connections):
+def print_book_summary_cell(writer: FileWriter, episode, book, connections):
 	op = writer.op
 	opl = writer.opl
 
 	classes = ["b%ic" % book.number, "lb", "rb"]
 
-	if seas_ep_num == 1:
+	if episode.number_in_season == 1:
 		classes.append("tb")
 
-	if seas_ep_num == len(episode.season.episodes):
+	if episode.number_in_season == len(episode.season.episodes):
 		classes.append("bb")
 
-	if (seas_ep_num - 1) % _nStripe == 0:
+	if (episode.number_in_season - 1) % _nStripe == 0:
 		classes.append("s")
 
 	op('<td class="%s">' % ' '.join(classes), indent=1)
@@ -240,24 +226,23 @@ def print_book_summary_cell(writer: FileWriter, episode, seas_ep_num, book, conn
 	opl("</td>")
 
 
-def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_line=False):
-	assert g_db is not None
+def print_body_cells(writer: FileWriter, episode, books, connections, debug_print_this_line=False):
 
 	# First, make list of all connections that match this episode
-	connections = [item for item in g_db.connections if item.episode == episode]
+	connections = [item for item in connections if item.episode == episode]
 
 	connection_chapter_nums = [item.chapter.number for item in connections]
 
 	debug_print("episode %i, %i connections: %s" % (episode.number, len(connections), repr(connection_chapter_nums)))
 	debug_print(repr(connections) + _eol)
 
-	for book in g_db.books:
+	for book in books:
 
 		if debug_print_this_line:
 			debug_print('')
 			debug_print('Book %i start' % book.number)
 
-		print_book_summary_cell(writer, episode, seas_ep_num, book, connections)
+		print_book_summary_cell(writer, episode, book, connections)
 
 		for idx, chapter in enumerate(book.chapters):
 
@@ -274,10 +259,10 @@ def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_
 			else:
 				classes = ["b%i" % book.number, "b%ico" % book_num]
 
-			if seas_ep_num == 1:
+			if episode.number_in_season == 1:
 				classes.append("tb")
 
-			if seas_ep_num == len(episode.season.episodes):
+			if episode.number_in_season == len(episode.season.episodes):
 				classes.append("bb")
 
 			if chapter is book.chapters[0]:
@@ -286,7 +271,7 @@ def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_
 			if chapter is book.chapters[-1]:
 				classes.append("rb")
 
-			if (idx % _nStripe == 0) or ((seas_ep_num - 1) % _nStripe == 0):
+			if (idx % _nStripe == 0) or ((episode.number_in_season - 1) % _nStripe == 0):
 				classes.append("s")
 
 			if debug_print_this_line:
@@ -312,21 +297,19 @@ def print_body_cells(writer: FileWriter, episode, seas_ep_num, debug_print_this_
 			writer.op('</td>')
 
 
-def print_episode_rows(writer: FileWriter, is_body: bool, is_end=False):
-
+def print_episode_rows(writer: FileWriter, seasons, books, connections, is_body: bool, is_end=False):
 	"""
 	:param writer:
 	:param is_body: indicates if this is the one that goes inside the main table
 	:param is_end: indicates if this is the one that goes at the very end (for print version)
 	"""
-	assert g_db is not None
 
 	op = writer.op
 	opl = writer.opl
 
 	hide_on_float = ' hideonfloat' if is_body else ''
 
-	for season in g_db.seasons:
+	for season in seasons:
 		for seas_ep_idx, episode in enumerate(season.episodes):
 
 			seas_ep_num = seas_ep_idx + 1
@@ -383,15 +366,12 @@ def print_episode_rows(writer: FileWriter, is_body: bool, is_end=False):
 				opl(episode.name + "</div></th>")
 
 			if is_body:
-				print_body_cells(writer, episode, seas_ep_num, debug_print_this_line=(episode.number == 1))
+				print_body_cells(writer, episode, books, connections, debug_print_this_line=(episode.number == 1))
 
 			opl("</tr>")
 
 
 def do_printing(db, input_dir='input', output_dir='output', output_print_dir='output-print'):
-	global g_db
-
-	g_db = db
 
 	html_template_filename_inter = os.path.join(input_dir, 'template.html')
 	html_template_filename_print = os.path.join(input_dir, 'template-print.html')
@@ -405,15 +385,15 @@ def do_printing(db, input_dir='input', output_dir='output', output_print_dir='ou
 			open(output_filename_inter, 'w') as out_file_interactive, \
 			open(output_filename_print, 'w') as out_file_print:
 
-		both_writer = FileWriter(out_file_print, out_file_interactive)
-		inter_writer = FileWriter(out_file_interactive)
-		print_writer = FileWriter(out_file_print)
+		writer_interactive = FileWriter(out_file_interactive)
+		writer_print_version = FileWriter(out_file_print)
+		writer_both = FileWriter(out_file_print, out_file_interactive)
 
-		w = both_writer
+		w = writer_both
 
 		print('Writing HTML Header')
-		print_html_header(inter_writer, in_file_interactive)
-		print_html_header(print_writer, in_file_print)
+		print_html_header(writer_interactive, in_file_interactive)
+		print_html_header(writer_print_version, in_file_print)
 
 		w.opl('<div id="tablediv" class="cpov spoiler_b0">')
 
@@ -421,18 +401,19 @@ def do_printing(db, input_dir='input', output_dir='output', output_print_dir='ou
 
 		print("Writing floating table")
 
-		w = inter_writer
+		w = writer_interactive
 
 		w.opl('<table id="floatingtable">')
 
 		w.opl('<thead>')
 		w.opl('<tr class="booktitlerow">')
-		w.opl('<th colspan="3" rowspan="2" class="cornerbox rb"><div class="cornerboxdiv">%s</div></th>' % _topLeftBox, indent=1)
+		w.opl('<th colspan="3" rowspan="2" class="cornerbox rb"><div class="cornerboxdiv">%s</div></th>' %
+			  _topLeftBox, indent=1)
 		w.opl('</tr>')
 		w.opl('<tr></tr>')
 		w.opl('</thead>')
 
-		print_episode_rows(w, is_body=False)
+		print_episode_rows(w, db.seasons, db.books, db.connections, is_body=False)
 
 		w.opl("</table>")
 
@@ -440,7 +421,7 @@ def do_printing(db, input_dir='input', output_dir='output', output_print_dir='ou
 
 		print("Writing table chapter headers")
 
-		w = both_writer
+		w = writer_both
 
 		w.opl('<div id="maintablediv">')
 
@@ -449,14 +430,15 @@ def do_printing(db, input_dir='input', output_dir='output', output_print_dir='ou
 		w.opl('<tr class="booktitlerow">')
 
 		# Non-floating top-left box
-		w.opl('<th colspan="3" rowspan="2" class="cornerbox hideonfloat"><div class="cornerboxdiv">%s</div></th>' % _topLeftBox, indent=1)
+		w.opl('<th colspan="3" rowspan="2" class="cornerbox hideonfloat"><div class="cornerboxdiv">%s</div></th>' %
+			  _topLeftBox, indent=1)
 
-		print_book_title_cells(w)
+		print_book_title_cells(w, db.books)
 
 		w.opl("</tr>")
 		w.opl("<tr>")
 
-		print_chapter_title_cells(w)
+		print_chapter_title_cells(w, db.books)
 
 		w.opl("</tr>")
 		w.opl("</thead>")
@@ -469,7 +451,7 @@ def do_printing(db, input_dir='input', output_dir='output', output_print_dir='ou
 		print("***** Writing table body *****")
 		print("")
 
-		print_episode_rows(w, is_body=True)
+		print_episode_rows(w, db.seasons, db.books, db.connections, is_body=True)
 
 		w.opl("</tbody>")
 		w.opl("</table>")
@@ -477,25 +459,24 @@ def do_printing(db, input_dir='input', output_dir='output', output_print_dir='ou
 
 		##### Print floating table - print version only #####
 
-		w = print_writer
+		w = writer_print_version
 
 		w.opl('<table id="floatingtable">')
 
 		w.opl('<thead>')
 		w.opl('<tr class="booktitlerow">')
-		w.opl('<th colspan="3" rowspan="2" class="cornerbox lb"><div class="cornerboxdiv">&nbsp;</div></th>', indent=1
-			  )
+		w.opl('<th colspan="3" rowspan="2" class="cornerbox lb"><div class="cornerboxdiv">&nbsp;</div></th>', indent=1)
 		w.opl("</tr>")
 		w.opl("<tr></tr>")
 		w.opl("</thead>")
 
-		print_episode_rows(w, is_body=False, is_end=True)
+		print_episode_rows(w, db.seasons, db.books, db.connections, is_body=False, is_end=True)
 
 		w.opl("</table>")
 
 		##### Done #####
 
-		w = both_writer
+		w = writer_both
 
 		w.opl("</div> <!-- /tablediv -->")
 
@@ -504,5 +485,5 @@ def do_printing(db, input_dir='input', output_dir='output', output_print_dir='ou
 		print("")
 
 		print('Writing HTML footer')
-		print_html_footer(inter_writer, in_file_interactive)
-		print_html_footer(print_writer, in_file_print)
+		print_html_footer(writer_interactive, in_file_interactive)
+		print_html_footer(writer_print_version, in_file_print)
