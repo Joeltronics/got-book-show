@@ -30,58 +30,62 @@ A note from the author:
 
 
 from utils import *
+from book_show_types import *
+from typing import Iterable, Optional, Union
 import os.path
 
 
 # Darken every n cells
-_nStripe = 5
+_n_stripe = 5
 
-_tableLine = '<!--table-->'
+_table_line = '<!--table-->'
 
-# HTML indentation character - ASCII tab "\t", several spaces, or nothing.
-_tab="\t"
+_top_left_box = '<img src="imgs/cornerbox.png">'
 
-# Windows EOL (\r\n)
-_eol="\r\n"
+_use_img_headers = True
 
-_topLeftBox = '<img src="imgs/cornerbox.png">'
-
-_useImgHeaders = True
-
-_currSeason = 5
-_latestEpisode = 50
+_curr_season = 5
+_latest_episode = 50
 
 # If chapter name is longer than this many characters, it will be abbreviated
 # Based on number of utils.display_string_len_approx() returns
-_maxChapNameLength = 15
+_max_chap_name_length = 15
+
+_use_roman_numerals_for_season_nums = True
 
 
 class FileWriter:
+
+	# HTML indentation character - ASCII tab "\t", several spaces, or nothing.
+	tab = "\t"
+
+	# Windows EOL
+	eol = "\r\n"
+
 	def __init__(self, *files):
 		self.files = files
 
-	def op(self, text, indent=0):
+	def op(self, text: str, indent=0):
 		for file in self.files:
-			indentation = ''.join([_tab] * indent)
+			indentation = self.tab * indent
 			file.write(indentation + text)
 
+	def opl(self, text: str, indent=0):
+		self.op(text + self.eol, indent=indent)
 
-	def opl(self, text, indent=0):
-		self.op(text + _eol, indent=indent)
 
-
-def is_chap_name_empty(chap_name):
+def is_chap_name_empty(chap_name: str):
 	x = ''.join(ch for ch in chap_name if ch.isalnum())
 	return x == ''
 
 
 def print_html_header(writer: FileWriter, in_file):
 	line = ''
-	while _tableLine not in line:
+	while _table_line not in line:
 		line = in_file.readline()
 
 		if not line.endswith('\n'):
-			raise ValueError('Error: line %s not found' % _tableLine)
+			raise ValueError('Error: line %s not found' % _table_line)
 
 		writer.op(line)
 
@@ -94,92 +98,128 @@ def print_html_footer(writer: FileWriter, in_file):
 		writer.op(line)
 
 
-def print_book_title_cells(writer: FileWriter, books):
+def is_striped(
+		episode: Optional[Episode]=None,
+		chapter: Optional[Chapter]=None,
+		book: Optional[Book]=None):
 
-	op = writer.op
-	opl = writer.opl
+	if episode is not None and (episode.number_in_season % _n_stripe == 1):
+		return True
 
-	for n, book in enumerate(books):
-
-		# Column that summarizes book (for when column set is collapsed)
-		classes = 'booktitle b%ititle b%ic' % (book.number, book.number)
-		op('<th rowspan="2" class="%s" onclick="expandbook(%i)">' % (classes, book.number), indent=1)
-
-		book_name = htmlize_string(book.name)
-
-		if _useImgHeaders:
-			opl('<img src="imgs/b%icoll.png" alt="%s">' % (book.number, book_name))
+	if chapter is not None:
+		if book is not None:
+			return book.chapters.index(chapter) % _n_stripe == 0
 		else:
-			op('<div class="booktitleabbrevrotate"><div class="booktitleabbrevinside">')
-			op(book.abbreviation)
-			op('</div></div>')
-
-		opl('</th>')
-
-		classes = 'booktitle b%ititle b%i' % (book.number, book.number)
-		op('<th colspan="%i" class="%s" onclick="collapsebook(%i)">' % (len(book.chapters), classes, book.number), indent=1)
-
-		if _useImgHeaders:
-			opl('<img src="imgs/b%ititle.png" alt="%s">' % (book.number, book_name))
-		else:
-			op(book_name)
-		opl('</th>')
+			return chapter.number_in_book % _n_stripe == 1
+	else:
+		return False
 
 
-def print_chapter_title_cells(writer: FileWriter, books):
+def print_book_title_cells(writer: FileWriter, book: Book):
 
-	op = writer.op
-	opl = writer.opl
+	book_name = htmlize_string(book.name)
 
+	# Column that summarizes book (for when column set is collapsed)
+
+	classes = 'booktitle b%ititle b%ic' % (book.number, book.number)
+
+	if _use_img_headers:
+		cell_contents = '<img src="imgs/b%icoll.png" alt="%s">' % (book.number, book_name)
+	else:
+		cell_contents = \
+			'<div class="booktitleabbrevrotate"><div class="booktitleabbrevinside">%s</div></div>' % book.abbreviation
+
+	writer.opl(
+		'<th rowspan="2" class="%s" onclick="expandbook(%i)">%s</th>' % (
+			classes, book.number, cell_contents),
+		indent=1)
+
+	# Main book title column
+
+	classes = 'booktitle b%ititle b%i' % (book.number, book.number)
+
+	if _use_img_headers:
+		cell_contents = '<img src="imgs/b%ititle.png" alt="%s">' % (book.number, book_name)
+	else:
+		cell_contents = book_name
+
+	writer.opl(
+		'<th colspan="%i" class="%s" onclick="collapsebook(%i)">%s</th>' % (
+			len(book.chapters), classes, book.number, cell_contents),
+		indent=1)
+
+
+def print_all_book_title_cells(writer: FileWriter, books: Iterable[Book]):
 	for book in books:
-		for idx, chap in enumerate(book.chapters):
-
-			# For "?" chapters after TWOW preview chaps
-			chap_name_isnt_real = is_chap_name_empty(chap.name)
-
-			# if name longer than ~15 characters, abbreviate
-			# If we're in combined section, prepend book number to chapter
-			# Want real book number, not fake combined book number, so use chap.book.number rather than book.number
-			chap_name_to_display = abbrev_string(
-				chap.name,
-				_maxChapNameLength,
-				prefix=str(chap.book.number) if book.is_combined else None)
-
-			if book.is_combined:
-				classes = ["cn", "b%i" % book.number, "b%ico" % chap.book.number, "bb"]
-			else:
-				classes = ["cn", "b%i" % chap.book.number, "bb"]
-
-			if chap is book.chapters[0]:
-				classes.append("lb")
-
-			if chap is book.chapters[-1]:
-				classes.append("rb")
-
-			if idx % _nStripe == 0:
-				classes.append("s")
-
-			if chap_name_isnt_real:
-				opl('<th class="%s"><div class="cni nonrotate">?</div></th>' % (' '.join(classes)), indent=1)
-
-			else:
-				classes_inner = "cni"
-
-				if not chap.occurred:
-					classes_inner += " ho"
-
-				opl('<th class="%s" title="%s"><div class="cnr"><div class="%s">%s</div></div></th>' % (
-					' '.join(classes), chap.name, classes_inner, chap_name_to_display), indent=1)
+		print_book_title_cells(writer, book)
 
 
-def print_connection(writer: FileWriter, strength, notes=None, pov=None):
+def print_chapter_title_cell(writer: FileWriter, book: Book, chapter: Chapter):
+	"""
+	:param writer:
+	:param book: Note that this may not match chapter.book for combined books
+	:param chapter:
+	"""
+
+	if not book.is_combined and book is not chapter.book:
+		print('WARNING: book does not match chapter.book for non-combined book!')
+
+	# For "?" chapters after TWOW preview chaps
+	chap_name_isnt_real = is_chap_name_empty(chapter.name)
+
+	# if name longer than ~15 characters, abbreviate
+	# If we're in combined section, prepend book number to chapter
+	# Want real book number, not fake combined book number, so use chapter.book.number rather than book.number
+	chap_name_to_display = abbrev_string(
+		chapter.name,
+		_max_chap_name_length,
+		prefix=str(chapter.book.number) if book.is_combined else None)
+
+	if book.is_combined:
+		classes = ["cn", "b%i" % book.number, "b%ico" % chapter.book.number, "bb"]
+	else:
+		classes = ["cn", "b%i" % chapter.book.number, "bb"]
+
+	if chapter is book.chapters[0]:
+		classes.append("lb")
+
+	if chapter is book.chapters[-1]:
+		classes.append("rb")
+
+	if is_striped(chapter=chapter, book=book):
+		classes.append("s")
+
+	if chap_name_isnt_real:
+		writer.opl('<th class="%s"><div class="cni nonrotate">?</div></th>' % (' '.join(classes)), indent=1)
+
+	else:
+		classes_inner = "cni"
+
+		if not chapter.occurred:
+			classes_inner += " ho"
+
+		writer.opl('<th class="%s" title="%s"><div class="cnr"><div class="%s">%s</div></div></th>' % (
+			' '.join(classes), chapter.name, classes_inner, chap_name_to_display), indent=1)
+
+
+def print_all_chapter_title_cells(writer: FileWriter, books: Iterable[Book]):
+	for book in books:
+		for chapter in book.chapters:
+			print_chapter_title_cell(writer, book, chapter)
+
+
+def print_connection(
+		writer: FileWriter,
+		is_strong_connection: bool,
+		notes: Optional[str]=None,
+		pov: Optional[str]=None):
 
 	classes = ["c"]
 
 	if pov is not None:
 		classes.append("pov%s" % pov.lower())
 
-	if strength:
+	if is_strong_connection:
 		classes.append("sc")
 	else:
 		classes.append("wc")
@@ -192,9 +232,11 @@ def print_connection(writer: FileWriter, strength, notes=None, pov=None):
 		writer.op('<div class="%s"></div>' % classes)
 
 
-def print_book_summary_cell(writer: FileWriter, episode, book, connections):
-	op = writer.op
-	opl = writer.opl
+def print_book_summary_cell_for_episode(
+		writer: FileWriter,
+		episode: Episode,
+		book: Union[Book, CombinedBook],
+		connections: Iterable[Connection]):
 
 	classes = ["b%ic" % book.number, "lb", "rb"]
 
@@ -204,10 +246,10 @@ def print_book_summary_cell(writer: FileWriter, episode, book, connections):
 	if episode.number_in_season == len(episode.season.episodes):
 		classes.append("bb")
 
-	if (episode.number_in_season - 1) % _nStripe == 0:
+	if is_striped(episode=episode):
 		classes.append("s")
 
-	op('<td class="%s">' % ' '.join(classes), indent=1)
+	writer.op('<td class="%s">' % ' '.join(classes), indent=1)
 
 	if book.is_combined:
 		ep_book_connections = [
@@ -221,20 +263,90 @@ def print_book_summary_cell(writer: FileWriter, episode, book, connections):
 		]
 
 	if ep_book_connections:
-		print_connection(writer, strength=any([item.strength for item in ep_book_connections]))
+		print_connection(writer, is_strong_connection=any([item.strength for item in ep_book_connections]))
 
-	opl("</td>")
+	writer.opl("</td>")
 
 
-def print_body_cells(writer: FileWriter, episode, books, connections, debug_print_this_line=False):
+def print_episode_chapter_cell(
+		writer: FileWriter,
+		episode: Episode,
+		book: Book,
+		chapter: Chapter,
+		connections_this_episode: Iterable[Connection],
+		debug_print_this_line=False):
+	"""
+	:param writer:
+	:param episode:
+	:param book: Note that this may not match chapter.book for combined books
+	:param chapter:
+	:param connections_this_episode:
+	:param debug_print_this_line:
+	"""
 
-	# First, make list of all connections that match this episode
-	connections = [item for item in connections if item.episode == episode]
+	if not book.is_combined and book is not chapter.book:
+		print('WARNING: book does not match chapter.book for non-combined book!')
 
-	connection_chapter_nums = [item.chapter.number for item in connections]
+	if debug_print_this_line:
+		debug_print("Book %i, Chapter %i" % (chapter.book.number, chapter.number_in_book))
 
-	debug_print("episode %i, %i connections: %s" % (episode.number, len(connections), repr(connection_chapter_nums)))
-	debug_print(repr(connections) + _eol)
+	if not book.is_combined:
+		classes = ["b%i" % chapter.book.number]
+	else:
+		classes = ["b%i" % book.number, "b%ico" % chapter.book.number]
+
+	if episode.number_in_season == 1:
+		classes.append("tb")
+
+	if episode.number_in_season == len(episode.season.episodes):
+		classes.append("bb")
+
+	if chapter is book.chapters[0]:
+		classes.append("lb")
+
+	if chapter is book.chapters[-1]:
+		classes.append("rb")
+
+	if is_striped(episode=episode, chapter=chapter, book=book):
+		classes.append("s")
+
+	if debug_print_this_line:
+		if 'lb' in classes:
+			debug_print('left border')
+		if 'rb' in classes:
+			debug_print('right border')
+
+	writer.op('<td class="%s">' % ' '.join(classes))
+
+	matching_connections = [item for item in connections_this_episode if item.chapter.number == chapter.number]
+
+	if matching_connections:
+
+		if len(matching_connections) > 1:
+			print('Multiple connections found for episode %i & chapter %i:' % (episode.number, chapter.number))
+			for conn in matching_connections:
+				print('\t' + repr(conn))
+
+		notes = '; '.join([c.notes for c in matching_connections if c.notes])
+		print_connection(writer, max([c.strength for c in matching_connections]), notes, pov=chapter.pov)
+
+	writer.op('</td>')
+
+
+def print_episode_body_cells(
+		writer: FileWriter,
+		episode: Episode,
+		books: Iterable[Book],
+		connections: Iterable[Connection],
+		debug_print_this_line=False):
+
+	connections_this_episode = [item for item in connections if item.episode == episode]
+
+	debug_print("episode %i, %i connections: %s" % (
+		episode.number,
+		len(connections_this_episode),
+		repr([item.chapter.number for item in connections_this_episode])))
+	debug_print(repr(connections_this_episode))
 
 	for book in books:
 
@@ -242,136 +354,253 @@ def print_body_cells(writer: FileWriter, episode, books, connections, debug_prin
 			debug_print('')
 			debug_print('Book %i start' % book.number)
 
-		print_book_summary_cell(writer, episode, book, connections)
+		print_book_summary_cell_for_episode(writer, episode, book, connections_this_episode)
 
-		for idx, chapter in enumerate(book.chapters):
-
-			# For combined book, may be different from book.number
-			book_num = chapter.book.number
-
-			# Print cell
-
-			if debug_print_this_line:
-				debug_print("Book %i, Chapter %i" % (book_num, chapter.number_in_book))
-
-			if not book.is_combined:
-				classes = ["b%i" % book_num]
-			else:
-				classes = ["b%i" % book.number, "b%ico" % book_num]
-
-			if episode.number_in_season == 1:
-				classes.append("tb")
-
-			if episode.number_in_season == len(episode.season.episodes):
-				classes.append("bb")
-
-			if chapter is book.chapters[0]:
-				classes.append("lb")
-
-			if chapter is book.chapters[-1]:
-				classes.append("rb")
-
-			if (idx % _nStripe == 0) or ((episode.number_in_season - 1) % _nStripe == 0):
-				classes.append("s")
-
-			if debug_print_this_line:
-				if 'lb' in classes:
-					debug_print('left border')
-				if 'rb' in classes:
-					debug_print('right border')
-
-			writer.op('<td class="%s">' % ' '.join(classes))
-
-			# Is there a connection? If so, make div inside cell
-			if chapter.number in connection_chapter_nums:
-				conns = [item for item in connections if item.chapter.number == chapter.number]
-
-				if len(conns) > 1:
-					print('Multiple connections found for episode %i & chapter %i:' % (episode.number, chapter.number))
-					for conn in conns:
-						print('\t' + repr(conn))
-
-				notes = '; '.join([c.notes for c in conns if c.notes])
-				print_connection(writer, max([c.strength for c in conns]), notes, pov=chapter.pov)
-
-			writer.op('</td>')
+		for chapter in book.chapters:
+			print_episode_chapter_cell(
+				writer, episode, book, chapter, connections_this_episode,
+				debug_print_this_line=debug_print_this_line)
 
 
-def print_episode_rows(writer: FileWriter, seasons, books, connections, is_body: bool, is_end=False):
+def print_episode_title_cells(
+		writer: FileWriter,
+		episode: Episode,
+		hide_on_float: bool,
+		mirror: bool):
 	"""
 	:param writer:
-	:param is_body: indicates if this is the one that goes inside the main table
-	:param is_end: indicates if this is the one that goes at the very end (for print version)
+	:param episode:
+	:param hide_on_float: if True, will add "hideonfloat" class
+	:param mirror: if True, episode and season cells will be swapped (i.e. for print version right floating table)
 	"""
 
-	op = writer.op
 	opl = writer.opl
 
-	hide_on_float = ' hideonfloat' if is_body else ''
+	first_of_season = episode is episode.season.episodes[0]
+	last_of_season = episode is episode.season.episodes[-1]
+
+	episode_classes = []  # Classes for both episode number and episode title
+	season_title_classes = ['seas%ititle' % episode.season.number]
+
+	if is_striped(episode=episode):
+		episode_classes.append('s')
+
+	if first_of_season:
+		episode_classes.append("tb")
+
+	if last_of_season:
+		episode_classes.append("bb")
+
+	if hide_on_float:
+		episode_classes.append('hideonfloat')
+		season_title_classes.append('hideonfloat')
+
+	ep_num_classes = ['epnum'] + episode_classes
+	if mirror:
+		ep_num_classes.append('rb')
+
+	ep_title_classes = ['eptitle', 'lb' if mirror else 'rb'] + episode_classes
+
+	season_title_classes = ' '.join(season_title_classes)
+	ep_num_classes = ' '.join(ep_num_classes)
+	ep_title_classes = ' '.join(ep_title_classes)
+
+	if mirror:
+		opl('<th class="%s"><div class="eptitleinside">%s</div></th>' % (ep_title_classes, episode.name), indent=1)
+		opl('<th class="%s">%i</th>' % (ep_num_classes, episode.number_in_season), indent=1)
+
+	if first_of_season:
+		opl('<th rowspan="%i" class="seasontitle %s">' % (len(episode.season.episodes), season_title_classes), indent=1)
+
+		if _use_img_headers:
+			opl('<img src="imgs/s%ititle.png" alt="Season %i">' % (episode.season.number, episode.season.number))
+		else:
+			if _use_roman_numerals_for_season_nums:
+				season_num_str = to_roman_numeral(episode.season.number)
+			else:
+				season_num_str = str(episode.season.number)
+
+			opl('<div class="seasonnamerotate">', indent=2)
+			opl('<div class="seasonnameinside">Season %s</div>' % season_num_str, indent=3)
+			opl("</div>", indent=2)
+
+		opl("</th>", indent=1)
+
+	if not mirror:
+		opl('<th class="%s">%i</th>' % (ep_num_classes, episode.number_in_season), indent=1)
+		opl('<th class="%s"><div class="eptitleinside">%s</div></th>' % (ep_title_classes, episode.name), indent=1)
+
+
+def print_episode_row(
+		writer: FileWriter,
+		episode: Episode,
+		books: Optional[Iterable[Book]],
+		connections: Optional[Iterable[Connection]],
+		is_body_section: bool,
+		is_end_section: bool):
+	"""
+	:param writer:
+	:param episode:
+	:param books: must be given if print_body_cells
+	:param connections: must be given if print_body_cells
+	:param is_body_section:
+	:param is_end_section:
+	"""
+
+	if is_body_section and is_end_section:
+		raise ValueError('Cannot be both body section and end section!')
+
+	if is_body_section and not books:
+		print('WARNING: is_body_section given but books empty!')
+
+	if is_body_section and not connections:
+		print('WARNING: is_body_section given but connections empty!')
+
+	# <tr>
+
+	ep_row_classes = ['eprow']
+
+	if episode is episode.season.episodes[0]:
+		ep_row_classes.append('epkeyrow')
+
+	season_class = "seas%i" % episode.season.number
+	if episode.season.number == _curr_season:
+		if episode.number <= _latest_episode:
+			season_class += "aired"
+		else:
+			season_class += "unaired"
+
+	ep_row_classes.append(season_class)
+
+	writer.opl('<tr class="%s">' % ' '.join(ep_row_classes))
+
+	# Season & episode title cells
+
+	print_episode_title_cells(writer, episode, hide_on_float=is_body_section, mirror=is_end_section)
+
+	# Body cells
+
+	if is_body_section:
+		print_episode_body_cells(writer, episode, books, connections, debug_print_this_line=(episode.number == 1))
+
+	# </tr>
+
+	writer.opl("</tr>")
+
+
+def print_all_episode_rows(
+		writer: FileWriter,
+		seasons: Iterable[Season],
+		books: Iterable[Book],
+		connections: Iterable[Connection]):
 
 	for season in seasons:
-		for seas_ep_idx, episode in enumerate(season.episodes):
-
-			seas_ep_num = seas_ep_idx + 1
-
-			if seas_ep_idx % _nStripe == 0:
-				stripe = ' s'
-			else:
-				stripe = ''
-
-			season_class = "seas%i" % season.number
-
-			season_title_class = season_class + "title"
-
-			if season.number == _currSeason:
-				if episode.number <= _latestEpisode:
-					season_class += "aired"
-				else:
-					season_class += "unaired"
-
-			if seas_ep_idx == 0:
-				opl('<tr class="eprow epkeyrow %s">' % season_class)
-			else:
-				opl('<tr class="eprow %s">' % season_class)
-
-			classes = stripe
-			if seas_ep_idx == 0:
-				classes += " tb"
-			elif seas_ep_idx == len(season.episodes) - 1:
-				classes += " bb"
-
-			if is_end:
-				op('<th class="eptitle lb%s%s">' % (classes, hide_on_float), indent=1)
-				op('<div class="eptitleinside">')
-				opl(episode.name + "</div></th>")
-				opl('<th class="epnum%s%s rb">%i</th>' % (classes, hide_on_float, seas_ep_num), indent=1)
-
-			if seas_ep_idx == 0:
-				opl('<th rowspan="10" class="seasontitle %s%s">' % (season_title_class, hide_on_float), indent=1)
-
-				if _useImgHeaders:
-					opl('<img src="imgs/s%ititle.png" alt="Season %i">' % (episode.season.number, episode.season.number))
-				else:
-					opl('<div class="seasonnamerotate">', indent=2)
-					opl('<div class="seasonnameinside">Season %s</div>' % to_roman_numeral(
-						int(episode.season.number)), indent=3)
-					opl("</div>", indent=2)
-
-				opl("</th>", indent=1)
-
-			if not is_end:
-				opl('<th class="epnum%s%s">%i</th>' % (classes, hide_on_float, seas_ep_num), indent=1)
-				op('<th class="eptitle rb%s%s">' % (classes, hide_on_float), indent=1)
-				op('<div class="eptitleinside">')
-				opl(episode.name + "</div></th>")
-
-			if is_body:
-				print_body_cells(writer, episode, books, connections, debug_print_this_line=(episode.number == 1))
-
-			opl("</tr>")
+		for episode in season.episodes:
+			print_episode_row(
+				writer, episode, books, connections,
+				is_body_section=True,
+				is_end_section=False)
 
 
-def do_printing(db, input_dir='input', output_dir='output', output_print_dir='output-print'):
+def print_floating_episode_list(writer: FileWriter, seasons: Iterable[Season]):
+	for season in seasons:
+		for episode in season.episodes:
+			print_episode_row(
+				writer, episode,
+				books=None, connections=None,
+				is_body_section=False,
+				is_end_section=False)
+
+
+def print_right_episode_list(writer: FileWriter, seasons: Iterable[Season]):
+	for season in seasons:
+		for episode in season.episodes:
+			print_episode_row(
+				writer, episode,
+				books=None, connections=None,
+				is_body_section=False,
+				is_end_section=True)
+
+
+def print_floating_table(w: FileWriter, db: DB):
+
+	w.opl('<table id="floatingtable">')
+
+	w.opl('<thead>')
+	w.opl('<tr class="booktitlerow">')
+	w.opl('<th colspan="3" rowspan="2" class="cornerbox rb"><div class="cornerboxdiv">%s</div></th>' %
+		_top_left_box, indent=1)
+	w.opl('</tr>')
+	w.opl('<tr></tr>')
+	w.opl('</thead>')
+
+	print_floating_episode_list(w, db.seasons)
+
+	w.opl("</table>")
+
+
+def print_right_floating_table(w: FileWriter, db: DB):
+
+	w.opl('<table id="floatingtable">')
+
+	w.opl('<thead>')
+	w.opl('<tr class="booktitlerow">')
+	w.opl('<th colspan="3" rowspan="2" class="cornerbox lb"><div class="cornerboxdiv">&nbsp;</div></th>', indent=1)
+	w.opl("</tr>")
+	w.opl("<tr></tr>")
+	w.opl("</thead>")
+
+	print_right_episode_list(w, db.seasons)
+
+	w.opl("</table>")
+
+
+def print_main_table(w: FileWriter, db: DB):
+
+	w.opl('<table id="maintable">')
+
+	# thead
+
+	w.opl('<thead>')
+	w.opl('<tr class="booktitlerow">')
+
+	w.opl('<th colspan="3" rowspan="2" class="cornerbox hideonfloat"><div class="cornerboxdiv">%s</div></th>' %
+		  _top_left_box, indent=1)
+
+	print("Writing table chapter headers")
+
+	print_all_book_title_cells(w, db.books)
+
+	w.opl('</tr>')
+	w.opl('<tr>')
+
+	print_all_chapter_title_cells(w, db.books)
+
+	w.opl('</tr>')
+	w.opl('</thead>')
+
+	# tbody
+
+	print('')
+	print('***** Writing table body *****')
+	print('')
+
+	w.opl('<tbody>')
+
+	print_all_episode_rows(w, db.seasons, db.books, db.connections)
+
+	w.opl('</tbody>')
+
+	print('')
+	print('***** Table body complete *****')
+	print('')
+
+	# End of table
+
+	w.opl('</table>')
+
+
+def do_printing(db: DB, input_dir='input', output_dir='output', output_print_dir='output-print'):
 
 	html_template_filename_inter = os.path.join(input_dir, 'template.html')
 	html_template_filename_print = os.path.join(input_dir, 'template-print.html')
@@ -389,100 +618,22 @@ def do_printing(db, input_dir='input', output_dir='output', output_print_dir='ou
 		writer_print_version = FileWriter(out_file_print)
 		writer_both = FileWriter(out_file_print, out_file_interactive)
 
-		w = writer_both
-
 		print('Writing HTML Header')
 		print_html_header(writer_interactive, in_file_interactive)
 		print_html_header(writer_print_version, in_file_print)
 
-		w.opl('<div id="tablediv" class="cpov spoiler_b0">')
+		writer_both.opl('<div id="tablediv" class="cpov spoiler_b0">')
 
-		##### Print floating table #####
+		print('Writing floating table')
+		print_floating_table(writer_interactive, db)
 
-		print("Writing floating table")
+		writer_both.opl('<div id="maintablediv">')
+		print_main_table(writer_both, db)
+		writer_both.opl('</div> <!-- /maintablediv -->')
 
-		w = writer_interactive
+		print_right_floating_table(writer_print_version, db)
 
-		w.opl('<table id="floatingtable">')
-
-		w.opl('<thead>')
-		w.opl('<tr class="booktitlerow">')
-		w.opl('<th colspan="3" rowspan="2" class="cornerbox rb"><div class="cornerboxdiv">%s</div></th>' %
-			  _topLeftBox, indent=1)
-		w.opl('</tr>')
-		w.opl('<tr></tr>')
-		w.opl('</thead>')
-
-		print_episode_rows(w, db.seasons, db.books, db.connections, is_body=False)
-
-		w.opl("</table>")
-
-		##### thead #####
-
-		print("Writing table chapter headers")
-
-		w = writer_both
-
-		w.opl('<div id="maintablediv">')
-
-		w.opl('<table id="maintable">')
-		w.opl('<thead>')
-		w.opl('<tr class="booktitlerow">')
-
-		# Non-floating top-left box
-		w.opl('<th colspan="3" rowspan="2" class="cornerbox hideonfloat"><div class="cornerboxdiv">%s</div></th>' %
-			  _topLeftBox, indent=1)
-
-		print_book_title_cells(w, db.books)
-
-		w.opl("</tr>")
-		w.opl("<tr>")
-
-		print_chapter_title_cells(w, db.books)
-
-		w.opl("</tr>")
-		w.opl("</thead>")
-
-		##### tbody #####
-
-		w.opl("<tbody>")
-
-		print("")
-		print("***** Writing table body *****")
-		print("")
-
-		print_episode_rows(w, db.seasons, db.books, db.connections, is_body=True)
-
-		w.opl("</tbody>")
-		w.opl("</table>")
-		w.opl("</div> <!-- /maintablediv -->")
-
-		##### Print floating table - print version only #####
-
-		w = writer_print_version
-
-		w.opl('<table id="floatingtable">')
-
-		w.opl('<thead>')
-		w.opl('<tr class="booktitlerow">')
-		w.opl('<th colspan="3" rowspan="2" class="cornerbox lb"><div class="cornerboxdiv">&nbsp;</div></th>', indent=1)
-		w.opl("</tr>")
-		w.opl("<tr></tr>")
-		w.opl("</thead>")
-
-		print_episode_rows(w, db.seasons, db.books, db.connections, is_body=False, is_end=True)
-
-		w.opl("</table>")
-
-		##### Done #####
-
-		w = writer_both
-
-		w.opl("</div> <!-- /tablediv -->")
-
-		print("")
-		print("***** Table body complete *****")
-		print("")
+		writer_both.opl('</div> <!-- /tablediv -->')
 
 		print('Writing HTML footer')
 		print_html_footer(writer_interactive, in_file_interactive)
