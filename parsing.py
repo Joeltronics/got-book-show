@@ -68,10 +68,17 @@ def parse_chapters(filename, book_list):
 			if not any(row):
 				continue
 
-			book_name = row[0]
-			chap_num_in_book = int(row[1]) + 1  # These are 0-indexed in CSV (i.e. 0 is prologue)
-			chap_name = row[2]
-			pov_char = row[3]
+			# A few fields in here are from functionality that never got implemented
+			# e.g. color by storyline or location
+			book_name, chap_num_in_book, chap_name, pov_char, _, _, _, occurred = row
+
+			book = find_unique(book_list, lambda book: book.name == book_name)
+			chap_num_in_book = int(chap_num_in_book) + 1  # 0-indexed in csv (i.e. prologue is 0)
+
+			if chap_num_in_book != len(book.chapters) + 1:
+				raise ValueError('Chapter number in book does not match order: expected number %i, row %s' % (
+					len(book.chapters) + 1, str(row)))
+
 			if not pov_char:
 				# if no POV char given in CSV file, use first word of chapter name
 				pov_char = row[2].split()[0]
@@ -83,9 +90,7 @@ def parse_chapters(filename, book_list):
 					print("WARNING: no POV char given for chapter " + chap_name)
 					pov_char = "Other"
 
-			occurred = bool(int(row[7]))
-
-			book = find_unique(book_list, lambda book: book.name == book_name)
+			occurred = bool(int(occurred))
 
 			total_chap_num += 1
 
@@ -113,7 +118,6 @@ def parse_combined_order(filename, chapters, books):
 		'A Feast for Crows & A Dance with Dragons (Chronological)',
 		abbreviation='AFfC + ADwD',
 		combined_books=[books[3], books[4]])
-
 
 	with open(filename, 'rU') as txt_file:
 		while True:
@@ -161,8 +165,14 @@ def parse_episodes(filename):
 			if not any(row):
 				continue
 
-			season_num = int(row[0])
-			name = row[3]
+			season_num, number_from_csv, num_in_season, name = row
+
+			number += 1
+
+			num_in_season = int(num_in_season)
+			number_from_csv = int(number_from_csv)
+			season_num = int(season_num)
+
 			name = name[1:-1]
 			debug_print(name)
 
@@ -172,9 +182,14 @@ def parse_episodes(filename):
 				season = Season(number=season_num)
 				season_list.append(season)
 
-			num_in_season = len(season.episodes) + 1
+			if num_in_season != len(season.episodes) + 1:
+				raise ValueError('Episode number in season does not match order: expected number %i, row %s' % (
+					len(season.episodes) + 1, str(row)))
 
-			number += 1
+			if number != number_from_csv:
+				raise ValueError('Episode number does not match order: expected number %i, ro %s' % (
+					number, str(row)))
+
 			episode = Episode(
 				number=number,
 				number_in_season=num_in_season,
@@ -194,13 +209,11 @@ def parse_connections(filename, db):
 		for row in reader:
 			if row[0].isdigit():
 
-				# FIXME: this assumes 10 episodes per season
-				ep_num = int(row[1]) + 10 * (int(row[0]) - 1)
-				book_num = int(row[2])
-				chap_name = row[3]
-				strength = row[4]
-				major = row[5]
-				notes = row[6]
+				seas_num, ep_num_in_season, book_num, chap_name, strength, major, notes = row
+
+				seas_num = int(seas_num)
+				ep_num_in_season = int(ep_num_in_season)
+				book_num = int(book_num)
 
 				if (chap_name == '') or (chap_name == '?'):
 					continue
@@ -220,7 +233,8 @@ def parse_connections(filename, db):
 					print("\tbook %i chap_name %s" % (book_num, chap_name))
 					print("\tnotes: %s" % notes)
 
-				episode = db.episodes[ep_num - 1]
+				season = find_unique(db.seasons, lambda s: s.number == seas_num)
+				episode = find_unique(season.episodes, lambda ep: ep.number_in_season == ep_num_in_season)
 
 				conn_list.append(Connection(
 					episode=episode,
@@ -249,24 +263,24 @@ def do_parsing(dir='input') -> DB:
 	db.books = parse_books(books_filename)
 
 	print("Processing chapters: %s" % chapter_filename)
-	db.chapters = parse_chapters(chapter_filename, db.books)
+	chapter_list = parse_chapters(chapter_filename, db.books)
 
 	print("Processing combined order: %s" % combined_filename)
-	combined_book = parse_combined_order(combined_filename, db.chapters, db.books)
+	combined_book = parse_combined_order(combined_filename, chapter_list, db.books)
 
 	print(len(combined_book.chapters), "chapters in books 4+5")
 
 	db.books.insert(5, combined_book)
 
 	print("")
-	print("%i chapters in %i books" % (len(db.chapters), len(db.books)))
+	print("%i chapters in %i books" % (len(chapter_list), len(db.books)))
 	for n, book in enumerate(db.books):
 		print("%i: %s" % (n+1, repr(book)))
 	print("")
 
 	print("Processing episodes: %s" % episode_filename)
-	db.episodes, db.seasons = parse_episodes(episode_filename)
-	print("%i episodes, %i seasons" % (len(db.episodes), len(db.seasons)))
+	episodes, db.seasons = parse_episodes(episode_filename)
+	print("%i episodes, %i seasons" % (len(episodes), len(db.seasons)))
 
 	print("")
 

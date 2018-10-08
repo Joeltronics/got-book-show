@@ -63,11 +63,8 @@ def main():
 
 	print("")
 
-	print("Sanity checking books & chapters")
-	sanity_check_books_chapters(db.books, db.chapters)
-
-	print("Sanity checking seasons & episodes")
-	sanity_check_seasons_episodes(db.seasons, db.episodes)
+	print("Sanity checking data")
+	db.sanity_check()
 
 	print("")
 
