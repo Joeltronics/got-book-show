@@ -33,6 +33,7 @@ from typing import List, Callable, Optional, Union
 
 
 _debug = False
+warnings = []
 
 
 def set_debug(val=True):
@@ -43,6 +44,11 @@ def set_debug(val=True):
 
 def is_debug():
 	return _debug
+
+
+def warn(s: str):
+	print('WARNING: %s' % s)
+	warnings.append(s)
 
 
 def debug_print(*args, **kwargs):

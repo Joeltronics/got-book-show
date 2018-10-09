@@ -87,7 +87,7 @@ def parse_chapters(filename, book_list):
 					pov_char = "Other"
 				elif pov_char[0:3].lower() == "the":
 					# If it's a "the" chapter, there should be a pov char set!
-					print("WARNING: no POV char given for chapter " + chap_name)
+					warn("no POV char given for chapter " + chap_name)
 					pov_char = "Other"
 
 			occurred = bool(int(occurred))
@@ -219,9 +219,7 @@ def parse_connections(filename, db):
 					continue
 
 				if strength not in ['0', '1']:
-					print("WARNING: chapter strength not 0 or 1")
-					print("\tbook %i chap_name %s" % (book_num, chap_name))
-					print("\tstrength: %s" % strength)
+					warn("Chapter strength not 0 or 1: book %i, chapter %s, strength %s" % (book_num, chap_name, strength))
 					continue
 				strength = int(strength)
 
@@ -229,9 +227,7 @@ def parse_connections(filename, db):
 				chapter = db.find_chapter(chap_name, book_num)
 
 				if not chapter:
-					print("WARNING: Chapter not found:")
-					print("\tbook %i chap_name %s" % (book_num, chap_name))
-					print("\tnotes: %s" % notes)
+					warn("Chapter not found: book %i, chapter %s, notes %s" % (book_num, chap_name, notes))
 
 				season = find_unique(db.seasons, lambda s: s.number == seas_num)
 				episode = find_unique(season.episodes, lambda ep: ep.number_in_season == ep_num_in_season)

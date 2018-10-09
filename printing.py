@@ -162,7 +162,7 @@ def print_chapter_title_cell(writer: FileWriter, book: Book, chapter: Chapter):
 	"""
 
 	if not book.is_combined and book is not chapter.book:
-		print('WARNING: book does not match chapter.book for non-combined book!')
+		warn('Book does not match chapter.book for non-combined book!')
 
 	# For "?" chapters after TWOW preview chaps
 	chap_name_isnt_real = is_chap_name_empty(chapter.name)
@@ -285,7 +285,7 @@ def print_episode_chapter_cell(
 	"""
 
 	if not book.is_combined and book is not chapter.book:
-		print('WARNING: book does not match chapter.book for non-combined book!')
+		warn('Book does not match chapter.book for non-combined book!')
 
 	if debug_print_this_line:
 		debug_print("Book %i, Chapter %i" % (chapter.book.number, chapter.number_in_book))
@@ -451,10 +451,10 @@ def print_episode_row(
 		raise ValueError('Cannot be both body section and end section!')
 
 	if is_body_section and not books:
-		print('WARNING: is_body_section given but books empty!')
+		warn('is_body_section given but books empty!')
 
 	if is_body_section and not connections:
-		print('WARNING: is_body_section given but connections empty!')
+		warn('is_body_section given but connections empty!')
 
 	# <tr>
 

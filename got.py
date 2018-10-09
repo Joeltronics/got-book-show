@@ -71,8 +71,14 @@ def main():
 	printing.do_printing(db)
 
 	print("")
-	print("Complete!")
-	print("")
+
+	if warnings:
+		print("Complete, with warnings:")
+		for warning in warnings:
+			print(warning)
+
+	else:
+		print("Success!")
 
 
 if __name__ == "__main__":
