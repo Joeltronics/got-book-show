@@ -88,7 +88,6 @@ class CombinedBook(Book):
 		)
 
 
-
 class Chapter:
 	def __init__(self, number: int, book: Book, number_in_book: int, name: str, pov_char: str, occurred: bool):
 		"""
@@ -136,7 +135,7 @@ class Episode:
 		self.book_connections = book_connections if book_connections else []
 
 	def __str__(self):
-		return '%i: "%s", %ix%02i' % (self.number, self.name, self.season.number, self.number_in_season)
+		return '%i (%ix%02i) "%s"' % (self.number, self.season.number, self.number_in_season, self.name)
 
 	def __repr__(self):
 		return 'Episode(%s, %i book connections)' % (str(self), len(self.book_connections))
