@@ -273,14 +273,12 @@ def print_episode_chapter_cell(
 		episode: Episode,
 		book: Book,
 		chapter: Chapter,
-		connections_this_episode: Iterable[Connection],
 		debug_print_this_line=False):
 	"""
 	:param writer:
 	:param episode:
 	:param book: Note that this may not match chapter.book for combined books
 	:param chapter:
-	:param connections_this_episode:
 	:param debug_print_this_line:
 	"""
 
@@ -318,7 +316,7 @@ def print_episode_chapter_cell(
 
 	writer.op('<td class="%s">' % ' '.join(classes))
 
-	matching_connections = [item for item in connections_this_episode if item.chapter.number == chapter.number]
+	matching_connections = [item for item in episode.book_connections if item.chapter.number == chapter.number]
 
 	if matching_connections:
 
@@ -337,16 +335,13 @@ def print_episode_body_cells(
 		writer: FileWriter,
 		episode: Episode,
 		books: Iterable[Book],
-		connections: Iterable[Connection],
 		debug_print_this_line=False):
-
-	connections_this_episode = [item for item in connections if item.episode == episode]
 
 	debug_print("episode %i, %i connections: %s" % (
 		episode.number,
-		len(connections_this_episode),
-		repr([item.chapter.number for item in connections_this_episode])))
-	debug_print(repr(connections_this_episode))
+		len(episode.book_connections),
+		repr([item.chapter.number for item in episode.book_connections])))
+	debug_print(repr(episode.book_connections))
 
 	for book in books:
 
@@ -354,12 +349,10 @@ def print_episode_body_cells(
 			debug_print('')
 			debug_print('Book %i start' % book.number)
 
-		print_book_summary_cell_for_episode(writer, episode, book, connections_this_episode)
+		print_book_summary_cell_for_episode(writer, episode, book, episode.book_connections)
 
 		for chapter in book.chapters:
-			print_episode_chapter_cell(
-				writer, episode, book, chapter, connections_this_episode,
-				debug_print_this_line=debug_print_this_line)
+			print_episode_chapter_cell(writer, episode, book, chapter, debug_print_this_line=debug_print_this_line)
 
 
 def print_episode_title_cells(
@@ -435,14 +428,12 @@ def print_episode_row(
 		writer: FileWriter,
 		episode: Episode,
 		books: Optional[Iterable[Book]],
-		connections: Optional[Iterable[Connection]],
 		is_body_section: bool,
 		is_end_section: bool):
 	"""
 	:param writer:
 	:param episode:
 	:param books: must be given if print_body_cells
-	:param connections: must be given if print_body_cells
 	:param is_body_section:
 	:param is_end_section:
 	"""
@@ -452,9 +443,6 @@ def print_episode_row(
 
 	if is_body_section and not books:
 		warn('is_body_section given but books empty!')
-
-	if is_body_section and not connections:
-		warn('is_body_section given but connections empty!')
 
 	# <tr>
 
@@ -481,7 +469,7 @@ def print_episode_row(
 	# Body cells
 
 	if is_body_section:
-		print_episode_body_cells(writer, episode, books, connections, debug_print_this_line=(episode.number == 1))
+		print_episode_body_cells(writer, episode, books, debug_print_this_line=(episode.number == 1))
 
 	# </tr>
 
@@ -491,13 +479,12 @@ def print_episode_row(
 def print_all_episode_rows(
 		writer: FileWriter,
 		seasons: Iterable[Season],
-		books: Iterable[Book],
-		connections: Iterable[Connection]):
+		books: Iterable[Book]):
 
 	for season in seasons:
 		for episode in season.episodes:
 			print_episode_row(
-				writer, episode, books, connections,
+				writer, episode, books,
 				is_body_section=True,
 				is_end_section=False)
 
@@ -507,7 +494,7 @@ def print_floating_episode_list(writer: FileWriter, seasons: Iterable[Season]):
 		for episode in season.episodes:
 			print_episode_row(
 				writer, episode,
-				books=None, connections=None,
+				books=None,
 				is_body_section=False,
 				is_end_section=False)
 
@@ -517,7 +504,7 @@ def print_right_episode_list(writer: FileWriter, seasons: Iterable[Season]):
 		for episode in season.episodes:
 			print_episode_row(
 				writer, episode,
-				books=None, connections=None,
+				books=None,
 				is_body_section=False,
 				is_end_section=True)
 
@@ -587,7 +574,7 @@ def print_main_table(w: FileWriter, db: DB):
 
 	w.opl('<tbody>')
 
-	print_all_episode_rows(w, db.seasons, db.books, db.connections)
+	print_all_episode_rows(w, db.seasons, db.books)
 
 	w.opl('</tbody>')
 

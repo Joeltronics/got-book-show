@@ -122,7 +122,7 @@ class Season:
 
 
 class Episode:
-	def __init__(self, number: int, number_in_season: int, season: Season, name: str):
+	def __init__(self, number: int, number_in_season: int, season: Season, name: str, book_connections=None):
 		"""
 		:param number: episode number (overall), 1-indexed
 		:param number_in_season: episode numbr in season, 1-indexed
@@ -133,12 +133,13 @@ class Episode:
 		self.number_in_season = number_in_season
 		self.season = season
 		self.name = name
+		self.book_connections = book_connections if book_connections else []
 
 	def __str__(self):
-		return '%i: "%s", season %i' % (self.number, self.name, self.season.number)
+		return '%i: "%s", %ix%02i' % (self.number, self.name, self.season.number, self.number_in_season)
 
 	def __repr__(self):
-		return 'Episode(%s)' % str(self)
+		return 'Episode(%s, %i book connections)' % (str(self), len(self.book_connections))
 
 
 class Connection:
@@ -168,7 +169,6 @@ class DB:
 	def __init__(self):
 		self.books = []
 		self.seasons = []
-		self.connections = []
 
 	def find_chapter(self, chap_name, book_num):
 		book = find_unique(self.books, lambda book: book.number == book_num)
@@ -209,3 +209,8 @@ class DB:
 
 			if not all([episode.season is season for episode in season.episodes]):
 				raise ValueError("Episodes's season reference does not match season it is in!")
+
+			for episode in season.episodes:
+				for connection in episode.book_connections:
+					if not connection.episode is episode:
+						raise ValueError("Connection's episode reference does not match episode it is in!")

@@ -232,13 +232,15 @@ def parse_connections(filename, db):
 				season = find_unique(db.seasons, lambda s: s.number == seas_num)
 				episode = find_unique(season.episodes, lambda ep: ep.number_in_season == ep_num_in_season)
 
-				conn_list.append(Connection(
+				connection = Connection(
 					episode=episode,
 					chapter=chapter,
 					strength=strength,
 					major=major,
 					notes=notes,
-				))
+				)
+
+				episode.book_connections.append(connection)
 
 	debug_print(repr(conn_list[0:10]))
 
@@ -281,8 +283,8 @@ def do_parsing(dir='input') -> DB:
 	print("")
 
 	print("Processing connections: %s" % connections_filename)
-	db.connections = parse_connections(connections_filename, db)
-	print("%i episode-chapter connections" % len(db.connections))
+	conn_list = parse_connections(connections_filename, db)
+	print("%i episode-chapter connections" % len(conn_list))
 
 	return db
 
