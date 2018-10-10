@@ -31,7 +31,7 @@ A note from the author:
 
 from utils import *
 from book_show_types import *
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional
 import os.path
 
 
@@ -161,7 +161,7 @@ def print_chapter_title_cell(writer: FileWriter, book: Book, chapter: Chapter):
 	:param chapter:
 	"""
 
-	if not book.is_combined and book is not chapter.book:
+	if not book.is_combined() and book is not chapter.book:
 		warn('Book does not match chapter.book for non-combined book!')
 
 	# For "?" chapters after TWOW preview chaps
@@ -173,9 +173,9 @@ def print_chapter_title_cell(writer: FileWriter, book: Book, chapter: Chapter):
 	chap_name_to_display = abbrev_string(
 		chapter.name,
 		_max_chap_name_length,
-		prefix=str(chapter.book.number) if book.is_combined else None)
+		prefix=str(chapter.book.number) if book.is_combined() else None)
 
-	if book.is_combined:
+	if book.is_combined():
 		classes = ["cn", "b%i" % book.number, "b%ico" % chapter.book.number, "bb"]
 	else:
 		classes = ["cn", "b%i" % chapter.book.number, "bb"]
@@ -235,7 +235,7 @@ def print_connection(
 def print_book_summary_cell_for_episode(
 		writer: FileWriter,
 		episode: Episode,
-		book: Union[Book, CombinedBook],
+		book: Book,
 		connections: Iterable[Connection]):
 
 	classes = ["b%ic" % book.number, "lb", "rb"]
@@ -251,7 +251,7 @@ def print_book_summary_cell_for_episode(
 
 	writer.op('<td class="%s">' % ' '.join(classes), indent=1)
 
-	if book.is_combined:
+	if book.is_combined():
 		ep_book_connections = [
 			item for item in connections
 			if (item.episode.number == episode.number) and (item.chapter.book in book.combined_books)
@@ -282,13 +282,13 @@ def print_episode_chapter_cell(
 	:param debug_print_this_line:
 	"""
 
-	if not book.is_combined and book is not chapter.book:
+	if not book.is_combined() and book is not chapter.book:
 		warn('Book does not match chapter.book for non-combined book!')
 
 	if debug_print_this_line:
 		debug_print("Book %i, Chapter %i" % (chapter.book.number, chapter.number_in_book))
 
-	if not book.is_combined:
+	if not book.is_combined():
 		classes = ["b%i" % chapter.book.number]
 	else:
 		classes = ["b%i" % book.number, "b%ico" % chapter.book.number]

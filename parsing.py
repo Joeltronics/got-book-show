@@ -99,7 +99,7 @@ def parse_chapters(filename, book_list):
 				book=book,
 				number_in_book=chap_num_in_book,
 				name=chap_name,
-				pov_char=pov_char,
+				pov=pov_char,
 				occurred=occurred,
 			)
 
@@ -113,7 +113,7 @@ def parse_chapters(filename, book_list):
 
 def parse_combined_order(filename, chapters, books):
 
-	combined_book = CombinedBook(
+	combined_book = Book(
 		45,
 		'A Feast for Crows & A Dance with Dragons (Chronological)',
 		abbreviation='AFfC + ADwD',

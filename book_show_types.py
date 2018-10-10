@@ -29,82 +29,55 @@ A note from the author:
 """
 
 
-from typing import List, Optional
-from utils import find_unique, concatenate_lists
+from typing import List
+from utils import find_unique
+from dataclasses import dataclass, field
 
 
+# Technically it's not 100% correct to set frozen=True, as some of these members (the lists) are mutable and we will be
+# modifiing them later. I'm not sure if that's non-pythonic, but at least it protects against changing the other fields
+
+
+@dataclass(frozen=True)
 class Book:
+	number: int
+	name: str
+	abbreviation: str
+	chapters: List = field(default_factory=list)
+	combined_books: List = field(default_factory=list)
 
-	is_combined = False
-
-	def __init__(self, number: int, name: str, abbreviation: str, chapters: Optional[List]=None):
-		"""
-		:param number: 1-indexed
-		:param name: book name
-		:param abbreviation: abbreviation, e.g. "AGoT"
-		:param chapters: list of chapters; can be given here or populated later
-		"""
-		self.number = number
-		self.name = name
-		self.abbreviation = abbreviation
-		self.chapters = chapters if chapters is not None else []
+	def is_combined(self):
+		return bool(self.combined_books)
 
 	def __str__(self):
 		return self.name
 
 	def __repr__(self):
-		return 'Book(%i: %s ("%s"), %i chapters)' % (
-			self.number,
-			self.name,
-			self.abbreviation,
-			len(self.chapters),
-		)
+		if self.is_combined():
+			return 'Book(%i (%s): %s ("%s"), %i chapters)' % (
+				self.number,
+				'+'.join(['%i' % book.number for book in self.combined_books]),
+				self.name,
+				self.abbreviation,
+				len(self.chapters),
+			)
+		else:
+			return 'Book(%i: %s ("%s"), %i chapters)' % (
+				self.number,
+				self.name,
+				self.abbreviation,
+				len(self.chapters),
+			)
 
 
-class CombinedBook(Book):
-
-	is_combined = True
-
-	def __init__(self, number: int, name: str, abbreviation: str, combined_books: List[Book], chapters: Optional[List]=None):
-		"""
-		:param number: token to use for fake "book" in chart
-		:param name: combined book name
-		:param abbreviation: abbreviation, e.g. "AFfC + ADwD"
-		:param combined_books: which books are combined
-		:param chapters: list of chapters; can be given here or populated later
-		"""
-		super().__init__(number, name, abbreviation, chapters)
-		self.combined_books = combined_books
-
-	def __str__(self):
-		return self.name
-
-	def __repr__(self):
-		return 'CombinedBook(%i: %s ("%s"), %i chapters)' % (
-			self.number,
-			self.name,
-			self.abbreviation,
-			len(self.chapters),
-		)
-
-
+@dataclass(frozen=True)
 class Chapter:
-	def __init__(self, number: int, book: Book, number_in_book: int, name: str, pov_char: str, occurred: bool):
-		"""
-
-		:param number: chapter number (overall), 1-indexed
-		:param book: reference to book
-		:param number_in_book: number in book, 1-indexed
-		:param name: chapter name
-		:param pov_char: POV character
-		:param occurred: if chapter has occurred in the show yet
-		"""
-		self.number = number
-		self.book = book
-		self.number_in_book = number_in_book
-		self.name = name
-		self.pov = pov_char
-		self.occurred = occurred
+	number: int
+	book: Book
+	number_in_book: int
+	name: str
+	pov: str
+	occurred: bool
 
 	def __str__(self):
 		return 'Chapter %i: "%s"' % (self.number, self.name)
@@ -114,25 +87,25 @@ class Chapter:
 			self.number, self.book.name, self.number_in_book, self.name, self.pov, str(self.occurred))
 
 
+@dataclass(frozen=True)
 class Season:
-	def __init__(self, number: int, episodes: Optional[List]=None):
-		self.number = number
-		self.episodes = episodes if episodes is not None else []
+	number: int
+	episodes: List = field(default_factory=list)
+
+	def __str__(self):
+		return 'Season %i' % self.number
+
+	def __repr__(self):
+		return 'Season(%i, %i episodes)' % (self.number, len(self.episodes))
 
 
+@dataclass(frozen=True)
 class Episode:
-	def __init__(self, number: int, number_in_season: int, season: Season, name: str, book_connections=None):
-		"""
-		:param number: episode number (overall), 1-indexed
-		:param number_in_season: episode numbr in season, 1-indexed
-		:param season: season number, 1-indexed
-		:param name: episode name
-		"""
-		self.number = number
-		self.number_in_season = number_in_season
-		self.season = season
-		self.name = name
-		self.book_connections = book_connections if book_connections else []
+	number: int
+	number_in_season: int
+	season: Season
+	name: str
+	book_connections: List = field(default_factory=list)
 
 	def __str__(self):
 		return '%i (%ix%02i) "%s"' % (self.number, self.season.number, self.number_in_season, self.name)
@@ -141,23 +114,16 @@ class Episode:
 		return 'Episode(%s, %i book connections)' % (str(self), len(self.book_connections))
 
 
+@dataclass(frozen=True)
 class Connection:
-	def __init__(self, episode: Episode, chapter: Chapter, strength: int, major: bool, notes: str):
-		"""
-		:param episode: Reference to episode
-		:param chapter: Reference to chapter
-		:param strength:
-		:param major: Is this a major storyline event?
-		:param notes: Notes to be shown in alt text
-		"""
-		self.episode = episode
-		self.chapter = chapter
-		self.strength = strength
-		self.major = major
-		self.notes = notes
+	episode: Episode
+	chapter: Chapter
+	strength: int
+	major: bool
+	notes: str
 
 	def __str__(self):
-		return 'Episode %i, Chapter %i' % (self.episode.number, self.chapter.number)
+		return 'Episode %i <-> Chapter %i' % (self.episode.number, self.chapter.number)
 
 	def __repr__(self):
 		return 'Connection(Episode %i, Chapter %i, Strength %s, Major %s, Notes: %s)' % (
@@ -185,7 +151,7 @@ class DB:
 
 		# Books & chapters
 
-		real_books = [book for book in self.books if not book.is_combined]
+		real_books = [book for book in self.books if not book.is_combined()]
 
 		if not all([book.number == idx + 1 for idx, book in enumerate(real_books)]):
 			raise ValueError('Book list is not sorted & complete')

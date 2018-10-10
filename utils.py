@@ -38,7 +38,6 @@ warnings = []
 
 def set_debug(val=True):
 	global _debug
-	print('Setting debug: ' + str(val))
 	_debug = val
 
 
